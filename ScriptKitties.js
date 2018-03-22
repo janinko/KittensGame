@@ -1088,6 +1088,11 @@ function autoHunt() {
 
 // Craft primary resources automatically
 function autoCraft() {
+	// Perform no crating during temporal paradox
+	if (gamePage.calendar.day < 0) {
+		return;
+	}
+
 	for (var i = 0; i < primaryResources.length; i++) {
 		var curRes = resources[primaryResources[i][0]];
 		var resourcePerTick = gamePage.getResourcePerTick(primaryResources[i][0], true);
