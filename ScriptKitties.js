@@ -78,6 +78,85 @@ var steamOn = 0;
 var programBuild = false;
 
 
+// Cache the objects representing various game elements for faster access
+var resources = {};
+{
+	const resourceNames = [
+		'alloy',
+		'beam',
+		'catnip',
+		'coal',
+		'concrate',
+		'culture',
+		'gear',
+		'gold',
+		'iron',
+		'kittens',
+		'manpower',
+		'minerals',
+		'oil',
+		'parchment',
+		'scaffold',
+		'ship',
+		'slab',
+		'steel',
+		'titanium',
+		'unobtainium',
+		'uranium',
+		'wood',
+	];
+	const numResources = resourceNames.length;
+	for (let i = 0; i < numResources; i++) {
+		const resourceName = resourceNames[i];
+		resources[resourceName] = gamePage.resPool.get(resourceName);
+	}
+}
+
+var crafts = {};
+{
+	const craftNames = [
+		'alloy',
+		'beam',
+		'blueprint',
+		'compedium',
+		'concrate',
+		'eludium',
+		'gear',
+		'kerosene',
+		'manuscript',
+		'parchment',
+		'plate',
+		'scaffold',
+		'slab',
+		'steel',
+		'thorium',
+		'wood',
+	];
+	const numCrafts = craftNames.length;
+	for (let i = 0; i < numCrafts; i++) {
+		const craftName = craftNames[i];
+		crafts[craftName] = gamePage.workshop.getCraft(craftName);
+	}
+}
+
+var races = {};
+{
+	const raceNames = [
+		'dragons',
+		'griffins',
+		'leviathans',
+		'sharks',
+		'spiders',
+		'zebras',
+	];
+	const numRaces = raceNames.length;
+	for (let i = 0; i < numRaces; i++) {
+		const raceName = raceNames[i];
+		races[raceName] = gamePage.diplomacy.get(raceName);
+	}
+}
+
+
 var buildings = [
 	["Hut", false],
 	["Log House", false],
@@ -182,7 +261,7 @@ var buildingsList = [
 	["tectonic"]
 ];
 
-var resources = [
+var primaryResources = [
 	["catnip", "wood", 50],
 	["wood", "beam", 175],
 	["minerals", "slab", 250],
@@ -417,7 +496,7 @@ function clearScript() {
 // Show current kitten efficiency in the in-game log
 function kittenEfficiency() {
 	var timePlayed = gamePage.stats.statsCurrent[3].calculate(game);
-	var numberKittens = gamePage.resPool.get('kittens').value;
+	var numberKittens = resources.kittens.value;
 	var curEfficiency = (numberKittens - 70) / timePlayed;
 	gamePage.msg("Your current efficiency is " + parseFloat(curEfficiency).toFixed(2) + " kittens per hour.");
 }
@@ -543,18 +622,16 @@ function autoSpace() {
 }
 
 // Trade automatically
-var leviathansRace = gamePage.diplomacy.get("leviathans");
-var goldResource = gamePage.resPool.get('gold');
 var diplomacyPerk = gamePage.prestige.getPerk("diplomacy");
 function autoTrade() {
 	// If it is possible to trade with the Leviathan, we always want to do so
-	if (leviathansRace.unlocked && (leviathansRace.duration > 0) && (gamePage.diplomacy.getMaxTradeAmt(leviathansRace) > 0)) {
+	if (races.leviathans.unlocked && (races.leviathans.duration > 0) && (gamePage.diplomacy.getMaxTradeAmt(races.leviathans) > 0)) {
 		// If it is possible to trade with the Leviathans, we always wish to do so, and with the maximum amount possible
-		gamePage.diplomacy.tradeAll(leviathansRace);
+		gamePage.diplomacy.tradeAll(races.leviathans);
 	}
 
 	// Non-Leviathan trades are only performed if we are about to hit our gold cap; if we have room for enough gold to last until the next run of this function, abort
-	if ((goldResource.value + (gamePage.getResourcePerTick('gold', true) * dispatchFunctions.autoTrade.triggerInterval)) < goldResource.maxValue) {
+	if ((resources.gold.value + (gamePage.getResourcePerTick('gold', true) * dispatchFunctions.autoTrade.triggerInterval)) < resources.gold.maxValue) {
 		return;
 	}
 
@@ -568,23 +645,19 @@ function autoTrade() {
 
 
 // Trade with the Zebras
-var titaniumResource = gamePage.resPool.get('titanium');
-var ironResource = gamePage.resPool.get('iron');
-var shipsResource = gamePage.resPool.get("ship");
-var zebrasRace = gamePage.diplomacy.get("zebras");
 function tradeZebras() {
 	// Check that the zebras are available to trade with
-	if (!zebrasRace.unlocked) {
+	if (!races.zebras.unlocked) {
 		return;
 	}
 
 	// Check that our titanium stockpile isn't already filled beyond its normal capacity
-	if (titaniumResource.value > (titaniumResource.maxValue + 1)) {
+	if (resources.titanium.value > (resources.titanium.maxValue + 1)) {
 		return;
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(zebrasRace);
+	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.zebras);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -594,7 +667,7 @@ function tradeZebras() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For titanium, this is purely a function of the number of ships you have with no seasonal or random variations and no effect from your trade ratio
-	var expectedTitaniumPerTrade = 1.5 + (1.5  * (shipsResource.value / 100) * 2);
+	var expectedTitaniumPerTrade = 1.5 + (1.5  * (resources.ship.value / 100) * 2);
 
 	// Then modify that by the effects of race relations
 	// For the Zebras, this is the chance any given trade will fail because they are hostile
@@ -605,28 +678,28 @@ function tradeZebras() {
 
 	// Then modify that by the chance that a successful trade will not include the desired resource in its results
 	// For titanium, this depends on the number of ships you have
-	var titaniumChance = 15 + (shipsResource.value * 0.35);
+	var titaniumChance = 15 + (resources.ship.value * 0.35);
 	if (titaniumChance < 100) {
 		expectedTitaniumPerTrade *= titaniumChance / 100;
 	}
 
 
 	// Our target final titanium level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our titanium income is positive)
-	var targetTitanium = titaniumResource.maxValue - Math.max(gamePage.getResourcePerTick('titanium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	var targetTitanium = resources.titanium.maxValue - Math.max(gamePage.getResourcePerTick('titanium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform
 	// We want to trade for just enough titanium to fill our stockpile
 
 	// Determine the amount of titanium needed to reach our target
-	var titaniumRequired = targetTitanium - titaniumResource.value;
+	var titaniumRequired = targetTitanium - resources.titanium.value;
 
 	// Determine how many trades are needed to get that much titanium, rounded down
 	var tradesRequired = Math.floor(titaniumRequired / expectedTitaniumPerTrade);
 
 	// The amount of titanium returned by a single trade, being a linear function of the number of ships you have, can potentially be arbitrarily large
 	// Therefore, if our titanium stockpile is below 90%, we always perform a minimum of 1 trade, even if some of it will be wasted
-	if (titaniumResource.value < (titaniumResource.maxValue * 0.9)) {
+	if (resources.titanium.value < (resources.titanium.maxValue * 0.9)) {
 		tradesRequired = Math.max(tradesRequired, 1);
 	}
 
@@ -640,22 +713,22 @@ function tradeZebras() {
 
 
 	// Besides the titanium, trading with the Zebras will also return some iron; we need ensure there is enough room in the stockpile for it, if possible
-	if (gamePage.workshop.getCraft("plate").unlocked) {
+	if (crafts.plate.unlocked) {
 		// Determine the maximum amount of iron we might receive from each trade:
 		// A successful trade with the Zebras always returns iron; the amount starts at 300, boosted by your trade ratio and modified by a seasonal modifier and a random factor (-4% to +4%)
 		// For this 'worst case' calculation, we will assume the largest possible random modifier and that all trades succeed
-		var maxIronPerTrade = 300 * (1 + gamePage.diplomacy.getTradeRatio()) * zebrasRace.sells[0].seasons[gamePage.calendar.getCurSeason().name] * 1.04;
+		var maxIronPerTrade = 300 * (1 + gamePage.diplomacy.getTradeRatio()) * races.zebras.sells[0].seasons[gamePage.calendar.getCurSeason().name] * 1.04;
 
 
 		// Our target final iron level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our iron income is positive)
-		var targetIron = ironResource.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+		var targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 		// Determine how much iron those trades might return
 		var expectedIron = tradesToPerform * maxIronPerTrade;
 
 		// Determine how much existing iron must be converted to steel to make room (up to a limit of 'all of it')
-		var ironOverflow = Math.min((ironResource.value + expectedIron) - targetIron, ironResource.value);
+		var ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
 
 		// Craft the necessary quantity of plates, if any, with each crafting consuming 125 units of iron
 		if (ironOverflow > 0) {
@@ -665,20 +738,18 @@ function tradeZebras() {
 
 
 	// Perform the trades
-	gamePage.diplomacy.tradeMultiple(zebrasRace, tradesToPerform);
+	gamePage.diplomacy.tradeMultiple(races.zebras, tradesToPerform);
 }
 
 // Trade with the Dragons
-var uraniumResource = gamePage.resPool.get('uranium');
-var dragonsRace = gamePage.diplomacy.get("dragons");
 function tradeDragons() {
 	// Check that the Dragons are available to trade with
-	if (!dragonsRace.unlocked) {
+	if (!races.dragons.unlocked) {
 		return;
 	}
 
 	// Check that our uranium stockpile isn't already filled beyond its normal capacity
-	if (uraniumResource.value > (uraniumResource.maxValue + 1)) {
+	if (resources.uranium.value > (resources.uranium.maxValue + 1)) {
 		return;
 	}
 
@@ -686,12 +757,12 @@ function tradeDragons() {
 	// Check that our titanium stockpile isn't filled beyond its normal capacity
 	// An over-filled resource stockpile, which usually comes from resetting the game with chronospheres, can be used to purchase things that cost more than the stockpile capacity
 	// It therefore represents an irreplaceable resource which should not be depleted automatically
-	if (titaniumResource.value > (titaniumResource.maxValue + 1)) {
+	if (resources.titanium.value > (resources.titanium.maxValue + 1)) {
 		return;
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(dragonsRace);
+	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.dragons);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -713,7 +784,7 @@ function tradeDragons() {
 
 
 	// Our target final uranium level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our uranium income is positive)
-	var targetUranium = uraniumResource.maxValue - Math.max(gamePage.getResourcePerTick('uranium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	var targetUranium = resources.uranium.maxValue - Math.max(gamePage.getResourcePerTick('uranium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
@@ -732,7 +803,7 @@ function tradeDragons() {
 		var expectedUranium = tradesToPerform * expectedUraniumPerTrade;
 
 		// Determine how much existing uranium must be converted to steel to make room (up to a limit of 'all of it')
-		var uraniumOverflow = Math.min((uraniumResource.value + expectedUranium) - targetUranium, uraniumResource.value);
+		var uraniumOverflow = Math.min((resources.uranium.value + expectedUranium) - targetUranium, resources.uranium.value);
 
 		// Craft the necessary quantity of thorium, with each crafting consuming 250 units of uranium
 		gamePage.craft("thorium", uraniumOverflow / 250);
@@ -740,7 +811,7 @@ function tradeDragons() {
 		// We are in normal mode, which means we want to trade for just enough uranium to fill our stockpile
 
 		// Determine the amount of uranium needed to reach our target
-		var uraniumRequired = targetUranium - uraniumResource.value;
+		var uraniumRequired = targetUranium - resources.uranium.value;
 
 		// Determine how many trades are needed to get that much uranium, rounded down
 		var tradesRequired = Math.floor(uraniumRequired / expectedUraniumPerTrade);
@@ -756,25 +827,23 @@ function tradeDragons() {
 
 
 	// Perform the trades
-	gamePage.diplomacy.tradeMultiple(dragonsRace, tradesToPerform);
+	gamePage.diplomacy.tradeMultiple(races.dragons, tradesToPerform);
 }
 
 // Trade with the Spiders
-var coalResource = gamePage.resPool.get('coal');
-var spidersRace = gamePage.diplomacy.get("spiders");
 function tradeSpiders() {
 	// Check that the Spiders are available to trade with
-	if (!spidersRace.unlocked) {
+	if (!races.spiders.unlocked) {
 		return;
 	}
 
 	// Check that our coal stockpile isn't already filled beyond its normal capacity
-	if (coalResource.value > (coalResource.maxValue + 1)) {
+	if (resources.coal.value > (resources.coal.maxValue + 1)) {
 		return;
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(spidersRace);
+	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.spiders);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -784,7 +853,7 @@ function tradeSpiders() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For coal, this is 350 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedCoalPerTrade = 350 * (1 + gamePage.diplomacy.getTradeRatio()) * spidersRace.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	var expectedCoalPerTrade = 350 * (1 + gamePage.diplomacy.getTradeRatio()) * races.spiders.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Spiders, this is the chance any given trade will return 25% extra because they are friendly
@@ -796,7 +865,7 @@ function tradeSpiders() {
 
 
 	// Our target final coal level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our coal income is positive)
-	var targetCoal = coalResource.maxValue - Math.max(gamePage.getResourcePerTick('coal', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	var targetCoal = resources.coal.maxValue - Math.max(gamePage.getResourcePerTick('coal', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
@@ -804,10 +873,10 @@ function tradeSpiders() {
 		// We are in maximize mode, which means we want to trade for as much coal as possible, converting any excess into steel
 
 		// Determine the maximum amount of coal we can covert to steel right now
-		var maxCoalCraftable = Math.min(coalResource.value, ironResource.value);
+		var maxCoalCraftable = Math.min(resources.coal.value, resources.iron.value);
 
 		// Determine the maximum amount of space that we can make available in our coal stockpile right now
-		var maxCoalSpace = targetCoal - (coalResource.value - maxCoalCraftable);
+		var maxCoalSpace = targetCoal - (resources.coal.value - maxCoalCraftable);
 
 		// Calculate the maximum number of trades we can make and fit the results into that space
 		var maxTradesFit = Math.floor(maxCoalSpace / expectedCoalPerTrade);
@@ -821,7 +890,7 @@ function tradeSpiders() {
 		var expectedCoal = tradesToPerform * expectedCoalPerTrade;
 
 		// Determine how much existing coal must be converted to steel to make room (up to a limit of 'all of it')
-		var coalOverflow = Math.min((coalResource.value + expectedCoal) - targetCoal, coalResource.value);
+		var coalOverflow = Math.min((resources.coal.value + expectedCoal) - targetCoal, resources.coal.value);
 
 		// Craft the necessary quantity of steel, with each crafting consuming 100 units of coal
 		gamePage.craft("steel", coalOverflow / 100);
@@ -829,7 +898,7 @@ function tradeSpiders() {
 		// We are in normal mode, which means we want to trade for just enough coal to fill our stockpile
 
 		// Determine the amount of coal needed to reach our target
-		var coalRequired = targetCoal - coalResource.value;
+		var coalRequired = targetCoal - resources.coal.value;
 
 		// Determine how many trades are needed to get that much coal, rounded down
 		var tradesRequired = Math.floor(coalRequired / expectedCoalPerTrade);
@@ -844,24 +913,23 @@ function tradeSpiders() {
 	}
 
 	// Perform the trades
-	gamePage.diplomacy.tradeMultiple(spidersRace, tradesToPerform);
+	gamePage.diplomacy.tradeMultiple(races.spiders, tradesToPerform);
 }
 
 // Trade with the Griffins
-var griffinsRace = gamePage.diplomacy.get("griffins");
 function tradeGriffins() {
 	// Check that the Griffins are available to trade with
-	if (!griffinsRace.unlocked) {
+	if (!races.griffins.unlocked) {
 		return;
 	}
 
 	// Check that our iron stockpile isn't already filled beyond its normal capacity
-	if (ironResource.value > (ironResource.maxValue + 1)) {
+	if (resources.iron.value > (resources.iron.maxValue + 1)) {
 		return;
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(griffinsRace);
+	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.griffins);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -871,7 +939,7 @@ function tradeGriffins() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For iron, this is 250 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedIronPerTrade = 250 * (1 + gamePage.diplomacy.getTradeRatio()) * griffinsRace.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	var expectedIronPerTrade = 250 * (1 + gamePage.diplomacy.getTradeRatio()) * races.griffins.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Griffins, this is the chance any given trade will fail because they are hostile
@@ -885,7 +953,7 @@ function tradeGriffins() {
 
 
 	// Our target final iron level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our iron income is positive)
-	var targetIron = ironResource.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	var targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
@@ -893,10 +961,10 @@ function tradeGriffins() {
 		// We are in maximize mode, which means we want to trade for as much iron as possible, converting any excess into steel
 
 		// Determine the maximum amount of iron we can covert to steel right now
-		var maxIronCraftable = Math.min(ironResource.value, ironResource.value);
+		var maxIronCraftable = Math.min(resources.iron.value, resources.iron.value);
 
 		// Determine the maximum amount of space that we can make available in our iron stockpile right now
-		var maxIronSpace = targetIron - (ironResource.value - maxIronCraftable);
+		var maxIronSpace = targetIron - (resources.iron.value - maxIronCraftable);
 
 		// Calculate the maximum number of trades we can make and fit the results into that space
 		var maxTradesFit = Math.floor(maxIronSpace / expectedIronPerTrade);
@@ -910,7 +978,7 @@ function tradeGriffins() {
 		var expectedIron = tradesToPerform * expectedIronPerTrade;
 
 		// Determine how much existing iron must be converted to steel to make room (up to a limit of 'all of it')
-		var ironOverflow = Math.min((ironResource.value + expectedIron) - targetIron, ironResource.value);
+		var ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
 
 		// Craft the necessary quantity of steel, with each crafting consuming 100 units of iron
 		gamePage.craft("steel", ironOverflow / 100);
@@ -918,7 +986,7 @@ function tradeGriffins() {
 		// We are in normal mode, which means we want to trade for just enough iron to fill our stockpile
 
 		// Determine the amount of iron needed to reach our target
-		var ironRequired = targetIron - ironResource.value;
+		var ironRequired = targetIron - resources.iron.value;
 
 		// Determine how many trades are needed to get that much iron, rounded down
 		var tradesRequired = Math.floor(ironRequired / expectedIronPerTrade);
@@ -933,34 +1001,32 @@ function tradeGriffins() {
 	}
 
 	// Perform the trades
-	gamePage.diplomacy.tradeMultiple(griffinsRace, tradesToPerform);
+	gamePage.diplomacy.tradeMultiple(races.griffins, tradesToPerform);
 }
 
 
 // Trade for food to prevent starvation
-var catnipResource = gamePage.resPool.get('catnip');
-var sharksRace = gamePage.diplomacy.get("sharks");
 function emergencyTradeFood() {
 	// Check that the Sharks are available to trade with
-	if (!sharksRace.unlocked) {
+	if (!races.sharks.unlocked) {
 		return;
 	}
 
 	// We want to trade for food if our catnip reserves are dangerously low
 	// For our purposes, that means we must have enough catnip to cover our deficit until the next time this function runs, plus a few extra ticks for safety
 	// We also want to trade if we are below 2% of our maximum catnip, to cover the edge case where we have /already/ run completely out of catnip and therefore have a catnip income of 0
-	var minSafeCatnip = Math.max((-gamePage.getResourcePerTick('catnip'), true) * (dispatchFunctions.emergencyTradeFood.triggerInterval + 4), catnipResource.maxValue * 0.02);
-	if (catnipResource.value >  minSafeCatnip) {
+	var minSafeCatnip = Math.max((-gamePage.getResourcePerTick('catnip'), true) * (dispatchFunctions.emergencyTradeFood.triggerInterval + 4), resources.catnip.maxValue * 0.02);
+	if (resources.catnip.value >  minSafeCatnip) {
 		return;
 	}
 
 	// Sanity check: It is theoretically possible that our catnip stockpile does not contain the reserve we are demanding, yet is actually already full, because its simply too small to hold that much catnip, in which case there's nothing more we can do
-	if (catnipResource.value > (catnipResource.maxValue - 1)) {
+	if (resources.catnip.value > (resources.catnip.maxValue - 1)) {
 		return;
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(sharksRace);
+	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.sharks);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -970,7 +1036,7 @@ function emergencyTradeFood() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For catnip, this is 35000 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedCatnipPerTrade = 35000 * (1 + gamePage.diplomacy.getTradeRatio()) * sharksRace.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	var expectedCatnipPerTrade = 35000 * (1 + gamePage.diplomacy.getTradeRatio()) * races.sharks.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Sharks, this is nothing; the Sharks are neutral, so trades never fail entirely nor return extra
@@ -984,14 +1050,14 @@ function emergencyTradeFood() {
 	var targetCatnip = minSafeCatnip * 10;
 
 	// Sanity check: '10 times our trigger amount' might be larger than our entire stockpile, so cap it at that
-	targetCatnip = Math.min(targetCatnip, catnipResource.maxValue);
+	targetCatnip = Math.min(targetCatnip, resources.catnip.maxValue);
 
 
 	// Determine how many trades to perform
 	// We want to trade for just enough catnip to fill our stockpile to the calculated level
 
 	// Determine the amount of catnip needed to reach our target
-	var catnipRequired = targetCatnip - catnipResource.value;
+	var catnipRequired = targetCatnip - resources.catnip.value;
 
 	// Determine how many trades are needed to get that much catnip, rounded up
 	var tradesRequired = Math.ceil(catnipRequired / expectedCatnipPerTrade);
@@ -1001,44 +1067,43 @@ function emergencyTradeFood() {
 
 
 	// Perform the trades
-	gamePage.diplomacy.tradeMultiple(sharksRace, tradesToPerform);
+	gamePage.diplomacy.tradeMultiple(races.sharks, tradesToPerform);
 }
 
 
 // Hunt automatically
 function autoHunt() {
 	// Trigger the hunt if we're within 1 tick of maxing out our catpower
-	var catpower = gamePage.resPool.get('manpower');
 	var catpowerPerTick = gamePage.getResourcePerTick('manpower', true);
-	if ((catpower.value + catpowerPerTick) > catpower.maxValue) {
+	if ((resources.manpower.value + catpowerPerTick) > resources.manpower.maxValue) {
 		gamePage.village.huntAll();
 	}
 
 	// Determine on which future tick our catpower resource will be maxed out, and set the dispatcher to call this function again on that tick
 	// Note that this does not /prevent/ the function from being called sooner due to another trigger condition
-	var ticksToFull = Math.floor((catpower.maxValue - catpower.value) / catpowerPerTick);
+	var ticksToFull = Math.floor((resources.manpower.maxValue - resources.manpower.value) / catpowerPerTick);
 	var curTick = gamePage.timer.ticksTotal;
 	dispatchFunctions.autoHunt.triggerTick = curTick + ticksToFull;
 }
 
 // Craft primary resources automatically
 function autoCraft() {
-	for (var i = 0; i < resources.length; i++) {
-		var curRes = gamePage.resPool.get(resources[i][0]);
-		var resourcePerTick = gamePage.getResourcePerTick(resources[i][0], true);
+	for (var i = 0; i < primaryResources.length; i++) {
+		var curRes = resources[primaryResources[i][0]];
+		var resourcePerTick = gamePage.getResourcePerTick(primaryResources[i][0], true);
 		var resourcePerCraft = (resourcePerTick * dispatchFunctions.autoCraft.triggerInterval);
-		if (curRes.value > (curRes.maxValue - resourcePerCraft) && gamePage.workshop.getCraft(resources[i][1]).unlocked) {
-			gamePage.craft(resources[i][1], (resourcePerCraft / resources[i][2]));
+		if (curRes.value > (curRes.maxValue - resourcePerCraft) && crafts[primaryResources[i][1]].unlocked) {
+			gamePage.craft(primaryResources[i][1], (resourcePerCraft / primaryResources[i][2]));
 		}
 	}
 
 	// Craft secondary resources automatically if primary craftable is > secondary craftable
 	for (var i = 0; i < secondaryResources.length; i++) {
-		var priRes = gamePage.resPool.get(secondaryResources[i][0]);
-		var secRes = gamePage.resPool.get(secondaryResources[i][1]);
+		var priRes = resources[secondaryResources[i][0]];
+		var secRes = resources[secondaryResources[i][1]];
 		var resMath = priRes.value / secondaryResources[i][2];
 
-		if (resMath > 1 && secRes.value < (priRes.value * (secResRatio / 100)) && gamePage.workshop.getCraft(secondaryResources[i][1]).unlocked) {
+		if (resMath > 1 && secRes.value < (priRes.value * (secResRatio / 100)) && crafts[secondaryResources[i][1]].unlocked) {
 			gamePage.craft(secondaryResources[i][1], (resMath * (secResRatio / 100)));
 		}
 	}
@@ -1047,7 +1112,7 @@ function autoCraft() {
 	//Craft the fur derivatives
 	var furDerivatives = ['parchment', 'manuscript', 'compedium', 'blueprint'];
 	for (var i = 0; i < furDerVal; i++) {
-		if (gamePage.workshop.getCraft(furDerivatives[i]).unlocked) {
+		if (crafts[furDerivatives[i]].unlocked) {
 			gamePage.craftAll(furDerivatives[i]);
 		}
 	}
@@ -1121,19 +1186,15 @@ function autoWorkshop() {
 
 // Festival automatically
 function autoParty() {
-	if (gamePage.science.get("drama").researched) {
-		var catpower = gamePage.resPool.get('manpower').value;
-		var culture = gamePage.resPool.get('culture').value;
-		var parchment = gamePage.resPool.get('parchment').value;
-
-		if ((catpower > 1500) && (culture > 5000) && (parchment > 2500) && (gamePage.calendar.festivalDays < 4000)) {
-			if (gamePage.prestige.getPerk("carnivals").researched)
-				gamePage.village.holdFestival(1);
-			else if (gamePage.calendar.festivalDays = 0) {
-				gamePage.village.holdFestival(1);
-			}
-		}
-
+	if (
+		gamePage.science.get("drama").researched
+		&& (resources.manpower.value > 1500)
+		&& (resources.culture.value > 5000)
+		&& (resources.parchment.value > 2500)
+		&& (gamePage.calendar.festivalDays < 4000)
+		&& (gamePage.prestige.getPerk("carnivals").researched || (gamePage.calendar.festivalDays = 0))
+	) {
+		gamePage.village.holdFestival(1);
 	}
 }
 
@@ -1149,9 +1210,6 @@ function autoAssign() {
 
 // Control Energy Consumption
 function energyControl() {
-	proVar = gamePage.resPool.energyProd;
-	conVar = gamePage.resPool.energyCons;
-
 	// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
 	dispatchFunctions.energyControl.triggerImmediate = true;
 
