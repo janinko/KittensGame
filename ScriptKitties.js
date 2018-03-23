@@ -1,4 +1,4 @@
-// These control the button statuses
+// Control the button statuses
 var autoButtons = {
 	autoBuild: {
 		active: false,
@@ -53,28 +53,19 @@ var autoButtons = {
 	alwaysOn: {
 		active: true
 	},
-}
+};
 
+// Controls which trades are performed in maximize mode
 var tradeMax = {uranium: false, coal: false, iron: false};
 
-// These will allow quick selection of the buildings which consume energy
-var bldSmelter = gamePage.bld.buildingsData[15];
-var bldBioLab = gamePage.bld.buildingsData[9];
-var bldOilWell = gamePage.bld.buildingsData[20];
-var bldFactory = gamePage.bld.buildingsData[22];
-var bldCalciner = gamePage.bld.buildingsData[16];
-var bldAccelerator = gamePage.bld.buildingsData[24];
+// Controls which job free kittens are assigned to
+var autoChoice = 'farmer';
 
-// These are the assorted variables
-var tickDownCounter = 1;
-var deadScript = "Script is dead";
-var autoChoice = "farmer";
-var resList = [];
-var steamOn = 0;
+// Controls whether autoSpace() will launch new space programs
 var programBuild = false;
 
 
-// Cache the objects representing various game elements for faster access
+// Caches the objects representing various game elements for faster access
 var resources = {};
 {
 	const resourceNames = [
@@ -182,7 +173,7 @@ var furDerivativeCraftPortion = 50;
 var craftIncome = 50;
 
 
-// The various crafts possible
+// Defines the various crafts possible
 var craftings = [
 	{
 		name: 'wood',
@@ -316,114 +307,117 @@ var furDerivativeCraftings = {
 			{name: 'compedium', amount: '25'},
 		],
 	},
-}
+};
 
 
+// Controls which building to build
 var buildings = [
-	["Hut", false],
-	["Log House", false],
-	["Mansion", false],
-	["Workshop", false],
-	["Factory", false],
-	["Catnip field", false],
-	["Pasture", false],
-	["Mine", false],
-	["Lumber Mill", false],
-	["Aqueduct", false],
-	["Oil Well", false],
-	["Quarry", false],
-	["Smelter", false],
-	["Bio Lab", false],
-	["Calciner", false],
-	["Reactor", false],
-	["Accelerator", false],
-	["Steamworks", false],
-	["Magneto", false],
-	["Library", false],
-	["Academy", false],
-	["Observatory", false],
-	["Barn", false],
-	["Harbour", false],
-	["Warehouse", false],
-	["Amphitheatre", false],
-	["Tradepost", false],
-	["Chapel", false],
-	["Temple", false],
-	["Mint", false],
-	["Ziggurat", false],
-	["Unicorn Pasture", false],
-	["Space Elevator", false, 0],
-	["Satellite", false, 0],
-	["Space Station", false, 0],
-	["Moon Outpost", false, 1],
-	["Moon Base", false, 1],
-	["Planet Cracker", false, 2],
-	["Hydro Fracturer", false, 2],
-	["Spice Refinery", false, 2],
-	["Research Vessel", false, 3],
-	["Orbital Array", false, 3],
-	["Sunlifter", false, 4],
-	["Containment Chamber", false, 4],
-	["Cryostation", false, 5],
-	["Space Beacon", false, 6],
-	["Terraforming Station", false, 7],
-	["Hydroponics", false, 7],
-	["Tectonic", false, 8]
+	['Hut', false],
+	['Log House', false],
+	['Mansion', false],
+	['Workshop', false],
+	['Factory', false],
+	['Catnip field', false],
+	['Pasture', false],
+	['Mine', false],
+	['Lumber Mill', false],
+	['Aqueduct', false],
+	['Oil Well', false],
+	['Quarry', false],
+	['Smelter', false],
+	['Bio Lab', false],
+	['Calciner', false],
+	['Reactor', false],
+	['Accelerator', false],
+	['Steamworks', false],
+	['Magneto', false],
+	['Library', false],
+	['Academy', false],
+	['Observatory', false],
+	['Barn', false],
+	['Harbour', false],
+	['Warehouse', false],
+	['Amphitheatre', false],
+	['Tradepost', false],
+	['Chapel', false],
+	['Temple', false],
+	['Mint', false],
+	['Ziggurat', false],
+	['Unicorn Pasture', false],
+	['Space Elevator', false, 0],
+	['Satellite', false, 0],
+	['Space Station', false, 0],
+	['Moon Outpost', false, 1],
+	['Moon Base', false, 1],
+	['Planet Cracker', false, 2],
+	['Hydro Fracturer', false, 2],
+	['Spice Refinery', false, 2],
+	['Research Vessel', false, 3],
+	['Orbital Array', false, 3],
+	['Sunlifter', false, 4],
+	['Containment Chamber', false, 4],
+	['Cryostation', false, 5],
+	['Space Beacon', false, 6],
+	['Terraforming Station', false, 7],
+	['Hydroponics', false, 7],
+	['Tectonic', false, 8]
 ];
+var numBuildings = buildings.length;
 
 var buildingsList = [
-	["hut"],
-	["logHouse"],
-	["mansion"],
-	["workshop"],
-	["factory"],
-	["field"],
-	["pasture"],
-	["mine"],
-	["lumberMill"],
-	["aqueduct"],
-	["oilWell"],
-	["quarry"],
-	["smelter"],
-	["biolab"],
-	["calciner"],
-	["reactor"],
-	["accelerator"],
-	["steamworks"],
-	["magneto"],
-	["library"],
-	["academy"],
-	["observatory"],
-	["barn"],
-	["harbor"],
-	["warehouse"],
-	["amphitheatre"],
-	["tradepost"],
-	["chapel"],
-	["temple"],
-	["mint"],
-	["ziggurat"],
-	["unicornPasture"],
-	["spaceElevator"],
-	["sattelite"],
-	["spaceStation"],
-	["moonOutpost"],
-	["moonBase"],
-	["planetCracker"],
-	["hydrofracturer"],
-	["spiceRefinery"],
-	["researchVessel"],
-	["orbitalArray"],
-	["sunlifter"],
-	["containmentChamber"],
-	["cryostation"],
-	["spaceBeacon"],
-	["terraformingStation"],
-	["hydroponics"],
-	["tectonic"]
+	['hut'],
+	['logHouse'],
+	['mansion'],
+	['workshop'],
+	['factory'],
+	['field'],
+	['pasture'],
+	['mine'],
+	['lumberMill'],
+	['aqueduct'],
+	['oilWell'],
+	['quarry'],
+	['smelter'],
+	['biolab'],
+	['calciner'],
+	['reactor'],
+	['accelerator'],
+	['steamworks'],
+	['magneto'],
+	['library'],
+	['academy'],
+	['observatory'],
+	['barn'],
+	['harbor'],
+	['warehouse'],
+	['amphitheatre'],
+	['tradepost'],
+	['chapel'],
+	['temple'],
+	['mint'],
+	['ziggurat'],
+	['unicornPasture'],
+	['spaceElevator'],
+	['sattelite'],
+	['spaceStation'],
+	['moonOutpost'],
+	['moonBase'],
+	['planetCracker'],
+	['hydrofracturer'],
+	['spiceRefinery'],
+	['researchVessel'],
+	['orbitalArray'],
+	['sunlifter'],
+	['containmentChamber'],
+	['cryostation'],
+	['spaceBeacon'],
+	['terraformingStation'],
+	['hydroponics'],
+	['tectonic']
 ];
 
 
+// Create the HTML
 var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 
 '<a id="scriptOptions" onclick="selectOptions()"> | ScriptKitties </a>' +
@@ -431,7 +425,7 @@ var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 '<div id="optionSelect" style="display:none; margin-top:-600px; margin-left:-100px; width:200px" class="dialog help">' +
 '<a href="#" onclick="clearOptionHelpDiv();" style="position: absolute; top: 10px; right: 15px;">close</a>' +
 
-'<button id="killSwitch" onclick="clearInterval(clearScript()); gamePage.msg(deadScript);">Kill Switch</button> <br />' +
+'<button id="killSwitch" onclick="clearInterval(clearScript()); gamePage.msg(\'Script is dead\');">Kill Switch</button> <br />' +
 '<button id="efficiencyButton" onclick="kittenEfficiency()">Check Efficiency</button><br /><br />' +
 
 '<button id="autoBuild" style="color:red" onclick="autoSwitch(autoButtons.autoBuild);"> Auto Build </button><br />' +
@@ -473,8 +467,6 @@ var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 '</div>' +
 '</div>';
 
-
-$("#footerLinks").append(htmlMenuAddition);
 
 var bldSelectAddition = '<div id="buildingSelect" style="display:none; margin-top:-500px; width:200px" class="dialog help">' +
 '<a href="#" onclick="$(\'#spaceSelect\').toggle(); $(\'#buildingSelect\').hide();" style="position: absolute; top: 10px; left: 15px;">space</a>' +
@@ -533,7 +525,7 @@ var spaceSelectAddition = '<div id="spaceSelect" style="display:none; margin-top
 '<a href="#" onclick="$(\'#spaceSelect\').hide(); $(\'#buildingSelect\').toggle();" style="position: absolute; top: 10px; left: 15px;">cath</a>' +
 '<a href="#" onclick="$(\'#spaceSelect\').hide();" style="position: absolute; top: 10px; right: 15px;">close</a>' +
 
-'	<br /><br /><input type="checkbox" id="programs" class="programs" onchange="programBuild = this.checked; console.log(this.checked);"><label for="programs">Programs</label><br /><br />' +
+'	<br /><br /><input type="checkbox" id="programs" class="programs" onchange="programBuild = this.checked;"><label for="programs">Programs</label><br /><br />' +
 
 '	<input type="checkbox" id="spaceChecker"><label for="spaceChecker" onclick="$(\'.spaceCheck\').click();"><b>Space</b></label><br />' +
 
@@ -583,28 +575,31 @@ var spaceSelectAddition = '<div id="spaceSelect" style="display:none; margin-top
 '</div>';
 
 
+// Insert the HTML
+$('#footerLinks').append(htmlMenuAddition);
+$('#game').append(bldSelectAddition);
+$('#game').append(spaceSelectAddition);
+
+
 function verifyBuildingSelected(buildingNumber, buildingCheckID) {
-	var bldIsChecked = document.getElementById(buildingCheckID).checked;
+	const bldIsChecked = document.getElementById(buildingCheckID).checked;
 	buildings[buildingNumber][1] = bldIsChecked;
 }
 
-$("#game").append(bldSelectAddition);
-$("#game").append(spaceSelectAddition);
-
 function clearOptionHelpDiv() {
-	$("#optionSelect").hide();
+	$('#optionSelect').hide();
 }
 
 function selectOptions() {
-	$("#optionSelect").toggle();
+	$('#optionSelect').toggle();
 }
 
 function clearHelpDiv() {
-	$("#buildingSelect").hide();
+	$('#buildingSelect').hide();
 }
 
 function selectBuildings() {
-	$("#buildingSelect").toggle();
+	$('#buildingSelect').toggle();
 }
 
 function setFurValue() {
@@ -627,24 +622,21 @@ function autoSwitch(autoButton) {
 	}
 }
 
+// Kill the script
 function clearScript() {
-	$("#farRightColumn").remove();
-	$("#buildingSelect").remove();
-	$("#spaceSelect").remove();
-	$("#scriptOptions").remove();
+	$('#farRightColumn').remove();
+	$('#buildingSelect').remove();
+	$('#spaceSelect').remove();
+	$('#scriptOptions').remove();
 	clearInterval(runAllAutomation);
-	autoBuildCheck = null;
-	bldSelectAddition = null;
-	spaceSelectAddition = null;
-	htmlMenuAddition = null;
 }
 
 // Show current kitten efficiency in the in-game log
 function kittenEfficiency() {
-	var timePlayed = gamePage.stats.statsCurrent[3].calculate(game);
-	var numberKittens = resources.kittens.value;
-	var curEfficiency = (numberKittens - 70) / timePlayed;
-	gamePage.msg("Your current efficiency is " + parseFloat(curEfficiency).toFixed(2) + " kittens per hour.");
+	const timePlayed = gamePage.stats.statsCurrent[3].calculate(game);
+	const numberKittens = resources.kittens.value;
+	const curEfficiency = (numberKittens - 70) / timePlayed;
+	gamePage.msg('Your current efficiency is ' + parseFloat(curEfficiency).toFixed(2) + ' kittens per hour.');
 }
 
 
@@ -652,75 +644,80 @@ function kittenEfficiency() {
 
 // Auto Observe Astronomical Events
 function autoObserve() {
-	var checkObserveBtn = document.getElementById("observeBtn");
+	const checkObserveBtn = document.getElementById('observeBtn');
 	if (typeof(checkObserveBtn) != 'undefined' && checkObserveBtn != null) {
 		document.getElementById('observeBtn').click();
 	}
 }
 
+
 // Auto praise the sun
+var templeBuilding = gamePage.bld.getBuildingExt('temple');
 function autoPraise(){
-	if (gamePage.bld.getBuildingExt('temple').meta.val > 0) {
+	if (templeBuilding.meta.val > 0) {
 		gamePage.religion.praise();
 	}
 }
 
+
 // Build buildings automatically
 function autoBuild() {
 	if (gamePage.ui.activeTabId == 'Bonfire') {
-		var btn = gamePage.tabs[0].buttons;
+		const buttons = gamePage.tabs[0].buttons;
 
-		for (var z = 0; z <  32; z++) {
-			if (buildings[z][1] != false) {
-				if (gamePage.bld.getBuildingExt(buildingsList[z]).meta.unlocked) {
-					for (i = 2 ;i < gamePage.tabs[0].buttons.length; i++) {
-						try {
-							if (btn[i].model.metadata.name == buildingsList[z]) {
-								btn[i].controller.buyItem(btn[i].model, {}, function(result) {
-									if (result) {
-										btn[i].update();
+		for (let z = 0; z < 32; z++) {
+			const buildingName = buildingsList[z];
+			if (buildings[z][1] && gamePage.bld.getBuildingExt(buildingName).meta.unlocked) {
+				for (let i = 2; i < gamePage.tabs[0].buttons.length; i++) {
+					try {
+						const button = buttons[i];
+						if (button.model.metadata.name == buildingName) {
+							button.controller.buyItem(button.model, {}, function(result) {
+								if (result) {
+									button.update();
 
-										// Set the triggerImmediate flag for this function, indicating it should be called again next tick
-										dispatchFunctions.autoBuild.triggerImmediate = true;
-									}
-								});
-							}
-						} catch(err) {
-							console.log(err);
+									// Set the triggerImmediate flag for this function, indicating it should be called again next tick
+									dispatchFunctions.autoBuild.triggerImmediate = true;
+								}
+							});
 						}
+					} catch(err) {
+						console.log(err);
 					}
 				}
 			}
-		}
-
-		if (gamePage.getResourcePerTick('coal') > 0.01 && steamOn < 1) {
-			gamePage.bld.getBuildingExt('steamworks').meta.on = gamePage.bld.getBuildingExt('steamworks').meta.val;
-			steamOn = 1;
 		}
 	}
 }
 
 // Build space stuff automatically
 function autoSpace() {
-	var origTab = gamePage.ui.activeTabId;
+	// Check space tab is unlocked
+	if (!gamePage.spaceTab.visible) {
+		return;
+	}
+
+	// Change the tab so that we can build
+	const origTab = gamePage.ui.activeTabId;
+	if (gamePage.ui.activeTabId != 'Space') {
+		gamePage.ui.activeTabId = 'Space';
+		gamePage.render();
+	}
 
 	// Build space buildings
-	for (var z = 32; z < buildings.length; z++) {
-		if (buildings[z][1] != false) {
-			var spBuild = gamePage.tabs[6].planetPanels[buildings[z][2]].children;
-
+	const planetPanels = gamePage.tabs[6].planetPanels;
+	for (let z = 32; z < numBuildings; z++) {
+		if (buildings[z][1]) {
 			try {
-				for (i = 0; i < spBuild.length; i++) {
-					if (spBuild[i].model.metadata.name == buildingsList[z]) {
-						// Change the tab so that we can build
-						if (gamePage.ui.activeTabId != "Space") {
-							gamePage.ui.activeTabId = 'Space';
-							gamePage.render();
-						}
-
-						spBuild[i].controller.buyItem(spBuild[i].model, {}, function(result) {
+				const buildingName = buildingsList[z];
+				const planetButtons = planetPanels[buildings[z][2]].children;
+				const numPlanetButtons = planetButtons.length;
+				for (let i = 0; i < numPlanetButtons; i++) {
+					const button = planetButtons[i];
+					if (button.model.metadata.name == buildingName) {
+						button.controller.buyItem(button.model, {}, function(result) {
 							if (result) {
-								spBuild[i].update();
+								button.update();
 
 								// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 								dispatchFunctions.autoSpace.triggerImmediate = true;
@@ -735,20 +732,16 @@ function autoSpace() {
 	}
 
 	// Build space programs
-	if (programBuild != false) {
-		var spcProg = gamePage.tabs[6].GCPanel.children;
-		for (var i = 0; i < spcProg.length; i++) {
-			if (spcProg[i].model.metadata.unlocked && spcProg[i].model.on == 0) {
+	if (programBuild) {
+		const programButtons = gamePage.tabs[6].GCPanel.children;
+		const numProgramButtons = programButtons.length;
+		for (let i = 0; i < numProgramButtons; i++) {
+			const programButton = programButtons[i];
+			if (programButton.model.metadata.unlocked && programButton.model.on == 0) {
 				try {
-					// Change the tab so that we can build
-					if (gamePage.ui.activeTabId != "Space") {
-						gamePage.ui.activeTabId = 'Space';
-						gamePage.render();
-					}
-
-					spcProg[i].controller.buyItem(spcProg[i].model, {}, function(result) {
+					programButton.controller.buyItem(programButton.model, {}, function(result) {
 						if (result) {
-							spcProg[i].update();
+							programButton.update();
 
 							// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 							dispatchFunctions.autoSpace.triggerImmediate = true;
@@ -767,8 +760,9 @@ function autoSpace() {
 	}
 }
 
+
 // Trade automatically
-var diplomacyPerk = gamePage.prestige.getPerk("diplomacy");
+var diplomacyPerk = gamePage.prestige.getPerk('diplomacy');
 function autoTrade() {
 	// If it is possible to trade with the Leviathan, we always want to do so
 	if (races.leviathans.unlocked && (races.leviathans.duration > 0) && (gamePage.diplomacy.getMaxTradeAmt(races.leviathans) > 0)) {
@@ -789,7 +783,6 @@ function autoTrade() {
 	tradeGriffins();
 }
 
-
 // Trade with the Zebras
 function tradeZebras() {
 	// Check that the zebras are available to trade with
@@ -803,7 +796,7 @@ function tradeZebras() {
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.zebras);
+	const maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.zebras);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -813,35 +806,35 @@ function tradeZebras() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For titanium, this is purely a function of the number of ships you have with no seasonal or random variations and no effect from your trade ratio
-	var expectedTitaniumPerTrade = 1.5 + (1.5  * (resources.ship.value / 100) * 2);
+	let expectedTitaniumPerTrade = 1.5 + (1.5  * (resources.ship.value / 100) * 2);
 
 	// Then modify that by the effects of race relations
 	// For the Zebras, this is the chance any given trade will fail because they are hostile
-	var tradeChance = 70 + gamePage.getEffect("standingRatio") + (diplomacyPerk.researched ? 10 : 0);
+	const tradeChance = 70 + gamePage.getEffect('standingRatio') + (diplomacyPerk.researched ? 10 : 0);
 	if (tradeChance < 100) {
 		expectedTitaniumPerTrade *= tradeChance / 100;
 	}
 
 	// Then modify that by the chance that a successful trade will not include the desired resource in its results
 	// For titanium, this depends on the number of ships you have
-	var titaniumChance = 15 + (resources.ship.value * 0.35);
+	const titaniumChance = 15 + (resources.ship.value * 0.35);
 	if (titaniumChance < 100) {
 		expectedTitaniumPerTrade *= titaniumChance / 100;
 	}
 
 
 	// Our target final titanium level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our titanium income is positive)
-	var targetTitanium = resources.titanium.maxValue - Math.max(gamePage.getResourcePerTick('titanium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	const targetTitanium = resources.titanium.maxValue - Math.max(gamePage.getResourcePerTick('titanium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform
 	// We want to trade for just enough titanium to fill our stockpile
 
 	// Determine the amount of titanium needed to reach our target
-	var titaniumRequired = targetTitanium - resources.titanium.value;
+	const titaniumRequired = targetTitanium - resources.titanium.value;
 
 	// Determine how many trades are needed to get that much titanium, rounded down
-	var tradesRequired = Math.floor(titaniumRequired / expectedTitaniumPerTrade);
+	let tradesRequired = Math.floor(titaniumRequired / expectedTitaniumPerTrade);
 
 	// The amount of titanium returned by a single trade, being a linear function of the number of ships you have, can potentially be arbitrarily large
 	// Therefore, if our titanium stockpile is below 90%, we always perform a minimum of 1 trade, even if some of it will be wasted
@@ -855,7 +848,7 @@ function tradeZebras() {
 	}
 
 	// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-	var tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+	const tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
 
 
 	// Besides the titanium, trading with the Zebras will also return some iron; we need ensure there is enough room in the stockpile for it, if possible
@@ -863,22 +856,22 @@ function tradeZebras() {
 		// Determine the maximum amount of iron we might receive from each trade:
 		// A successful trade with the Zebras always returns iron; the amount starts at 300, boosted by your trade ratio and modified by a seasonal modifier and a random factor (-4% to +4%)
 		// For this 'worst case' calculation, we will assume the largest possible random modifier and that all trades succeed
-		var maxIronPerTrade = 300 * (1 + gamePage.diplomacy.getTradeRatio()) * races.zebras.sells[0].seasons[gamePage.calendar.getCurSeason().name] * 1.04;
+		const maxIronPerTrade = 300 * (1 + gamePage.diplomacy.getTradeRatio()) * races.zebras.sells[0].seasons[gamePage.calendar.getCurSeason().name] * 1.04;
 
 
 		// Our target final iron level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our iron income is positive)
-		var targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+		const targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 		// Determine how much iron those trades might return
-		var expectedIron = tradesToPerform * maxIronPerTrade;
+		const expectedIron = tradesToPerform * maxIronPerTrade;
 
 		// Determine how much existing iron must be converted to steel to make room (up to a limit of 'all of it')
-		var ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
+		const ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
 
 		// Craft the necessary quantity of plates, if any, with each crafting consuming 125 units of iron
 		if (ironOverflow > 0) {
-			gamePage.craft("plate", ironOverflow / 125);
+			gamePage.craft('plate', ironOverflow / 125);
 		}
 	}
 
@@ -908,7 +901,7 @@ function tradeDragons() {
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.dragons);
+	const maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.dragons);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -919,7 +912,7 @@ function tradeDragons() {
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For uranium, this is 1 unit per trade boosted by your trade ratio, with no seasonal modifier
 	// There's also what's supposed to be a random variation of +/- 12.5% (which would cancel itself out on average), but, due to a bug in the game code, actually ends up always returning the minimum possible amount
-	var expectedUraniumPerTrade = 1 * (1 + gamePage.diplomacy.getTradeRatio()) * 0.875;
+	let expectedUraniumPerTrade = 1 * (1 + gamePage.diplomacy.getTradeRatio()) * 0.875;
 
 	// Then modify that by the effects of race relations
 	// For the Dragons, this is nothing; the Dragons are neutral, so trades never fail entirely nor return extra
@@ -930,37 +923,38 @@ function tradeDragons() {
 
 
 	// Our target final uranium level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our uranium income is positive)
-	var targetUranium = resources.uranium.maxValue - Math.max(gamePage.getResourcePerTick('uranium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	const targetUranium = resources.uranium.maxValue - Math.max(gamePage.getResourcePerTick('uranium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
+	let tradesToPerform;
 	if (tradeMax.uranium) {
 		// We are in maximize mode, which means we want to trade for as much uranium as possible, converting any excess into steel
 
 		// Calculate the maximum number of trades we can make and fit the results into our target uranium level
-		var maxTradesFit = Math.floor(targetUranium / expectedUraniumPerTrade);
+		const maxTradesFit = Math.floor(targetUranium / expectedUraniumPerTrade);
 
 		// If possible, we want to perform as many trades as we have the resources for; if we don't have enough space in the stockpile to do that, we just do as many as we can fit
-		var tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
+		tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
 
 
 		// Convert the excess uranium:
 		// Determine how much uranium those trades will return
-		var expectedUranium = tradesToPerform * expectedUraniumPerTrade;
+		const expectedUranium = tradesToPerform * expectedUraniumPerTrade;
 
 		// Determine how much existing uranium must be converted to steel to make room (up to a limit of 'all of it')
-		var uraniumOverflow = Math.min((resources.uranium.value + expectedUranium) - targetUranium, resources.uranium.value);
+		const uraniumOverflow = Math.min((resources.uranium.value + expectedUranium) - targetUranium, resources.uranium.value);
 
 		// Craft the necessary quantity of thorium, with each crafting consuming 250 units of uranium
-		gamePage.craft("thorium", uraniumOverflow / 250);
+		gamePage.craft('thorium', uraniumOverflow / 250);
 	} else {
 		// We are in normal mode, which means we want to trade for just enough uranium to fill our stockpile
 
 		// Determine the amount of uranium needed to reach our target
-		var uraniumRequired = targetUranium - resources.uranium.value;
+		const uraniumRequired = targetUranium - resources.uranium.value;
 
 		// Determine how many trades are needed to get that much uranium, rounded down
-		var tradesRequired = Math.floor(uraniumRequired / expectedUraniumPerTrade);
+		const tradesRequired = Math.floor(uraniumRequired / expectedUraniumPerTrade);
 
 		// If no trades are necessary, we're done
 		if (tradesRequired < 1) {
@@ -968,7 +962,7 @@ function tradeDragons() {
 		}
 
 		// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-		var tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+		tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
 	}
 
 
@@ -989,7 +983,7 @@ function tradeSpiders() {
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.spiders);
+	const maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.spiders);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -999,11 +993,11 @@ function tradeSpiders() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For coal, this is 350 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedCoalPerTrade = 350 * (1 + gamePage.diplomacy.getTradeRatio()) * races.spiders.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	let expectedCoalPerTrade = 350 * (1 + gamePage.diplomacy.getTradeRatio()) * races.spiders.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Spiders, this is the chance any given trade will return 25% extra because they are friendly
-	var bonusChance = 15 + ((gamePage.getEffect("standingRatio") + (diplomacyPerk.researched ? 10 : 0)) / 2);
+	const bonusChance = 15 + ((gamePage.getEffect('standingRatio') + (diplomacyPerk.researched ? 10 : 0)) / 2);
 	expectedCoalPerTrade *= 1 + (0.25 * (bonusChance <= 100 ? bonusChance : 100) / 100);
 
 	// Then modify that by the chance that a successful trade will not include the desired resource in its results
@@ -1011,43 +1005,44 @@ function tradeSpiders() {
 
 
 	// Our target final coal level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our coal income is positive)
-	var targetCoal = resources.coal.maxValue - Math.max(gamePage.getResourcePerTick('coal', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	const targetCoal = resources.coal.maxValue - Math.max(gamePage.getResourcePerTick('coal', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
+	let tradesToPerform;
 	if (tradeMax.coal) {
 		// We are in maximize mode, which means we want to trade for as much coal as possible, converting any excess into steel
 
 		// Determine the maximum amount of coal we can covert to steel right now
-		var maxCoalCraftable = Math.min(resources.coal.value, resources.iron.value);
+		const maxCoalCraftable = Math.min(resources.coal.value, resources.iron.value);
 
 		// Determine the maximum amount of space that we can make available in our coal stockpile right now
-		var maxCoalSpace = targetCoal - (resources.coal.value - maxCoalCraftable);
+		const maxCoalSpace = targetCoal - (resources.coal.value - maxCoalCraftable);
 
 		// Calculate the maximum number of trades we can make and fit the results into that space
-		var maxTradesFit = Math.floor(maxCoalSpace / expectedCoalPerTrade);
+		const maxTradesFit = Math.floor(maxCoalSpace / expectedCoalPerTrade);
 
 		// If possible, we want to perform as many trades as we have the resources for; if we don't have enough space in the stockpile to do that, we just do as many as we can fit
-		var tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
+		tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
 
 
 		// Convert the excess coal:
 		// Determine how much coal those trades will return
-		var expectedCoal = tradesToPerform * expectedCoalPerTrade;
+		const expectedCoal = tradesToPerform * expectedCoalPerTrade;
 
 		// Determine how much existing coal must be converted to steel to make room (up to a limit of 'all of it')
-		var coalOverflow = Math.min((resources.coal.value + expectedCoal) - targetCoal, resources.coal.value);
+		const coalOverflow = Math.min((resources.coal.value + expectedCoal) - targetCoal, resources.coal.value);
 
 		// Craft the necessary quantity of steel, with each crafting consuming 100 units of coal
-		gamePage.craft("steel", coalOverflow / 100);
+		gamePage.craft('steel', coalOverflow / 100);
 	} else {
 		// We are in normal mode, which means we want to trade for just enough coal to fill our stockpile
 
 		// Determine the amount of coal needed to reach our target
-		var coalRequired = targetCoal - resources.coal.value;
+		const coalRequired = targetCoal - resources.coal.value;
 
 		// Determine how many trades are needed to get that much coal, rounded down
-		var tradesRequired = Math.floor(coalRequired / expectedCoalPerTrade);
+		const tradesRequired = Math.floor(coalRequired / expectedCoalPerTrade);
 
 		// If no trades are necessary, we're done
 		if (tradesRequired < 1) {
@@ -1055,7 +1050,7 @@ function tradeSpiders() {
 		}
 
 		// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-		var tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+		tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
 	}
 
 	// Perform the trades
@@ -1075,7 +1070,7 @@ function tradeGriffins() {
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.griffins);
+	const maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.griffins);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -1085,11 +1080,11 @@ function tradeGriffins() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For iron, this is 250 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedIronPerTrade = 250 * (1 + gamePage.diplomacy.getTradeRatio()) * races.griffins.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	let expectedIronPerTrade = 250 * (1 + gamePage.diplomacy.getTradeRatio()) * races.griffins.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Griffins, this is the chance any given trade will fail because they are hostile
-	var tradeChance = 85 + gamePage.getEffect("standingRatio") + (diplomacyPerk.researched ? 10 : 0);
+	const tradeChance = 85 + gamePage.getEffect('standingRatio') + (diplomacyPerk.researched ? 10 : 0);
 	if (tradeChance < 100) {
 		expectedIronPerTrade *= tradeChance / 100;
 	}
@@ -1099,43 +1094,44 @@ function tradeGriffins() {
 
 
 	// Our target final iron level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our iron income is positive)
-	var targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+	const targetIron = resources.iron.maxValue - Math.max(gamePage.getResourcePerTick('iron', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
 
 
 	// Determine how many trades to perform depending on the current trade mode
+	let tradesToPerform;
 	if (tradeMax.iron) {
 		// We are in maximize mode, which means we want to trade for as much iron as possible, converting any excess into steel
 
 		// Determine the maximum amount of iron we can covert to steel right now
-		var maxIronCraftable = Math.min(resources.iron.value, resources.iron.value);
+		const maxIronCraftable = Math.min(resources.iron.value, resources.iron.value);
 
 		// Determine the maximum amount of space that we can make available in our iron stockpile right now
-		var maxIronSpace = targetIron - (resources.iron.value - maxIronCraftable);
+		const maxIronSpace = targetIron - (resources.iron.value - maxIronCraftable);
 
 		// Calculate the maximum number of trades we can make and fit the results into that space
-		var maxTradesFit = Math.floor(maxIronSpace / expectedIronPerTrade);
+		const maxTradesFit = Math.floor(maxIronSpace / expectedIronPerTrade);
 
 		// If possible, we want to perform as many trades as we have the resources for; if we don't have enough space in the stockpile to do that, we just do as many as we can fit
-		var tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
+		tradesToPerform = Math.min(maxTradesPossible, maxTradesFit);
 
 
 		// Convert the excess iron:
 		// Determine how much iron those trades will return
-		var expectedIron = tradesToPerform * expectedIronPerTrade;
+		const expectedIron = tradesToPerform * expectedIronPerTrade;
 
 		// Determine how much existing iron must be converted to steel to make room (up to a limit of 'all of it')
-		var ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
+		const ironOverflow = Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value);
 
 		// Craft the necessary quantity of steel, with each crafting consuming 100 units of iron
-		gamePage.craft("steel", ironOverflow / 100);
+		gamePage.craft('steel', ironOverflow / 100);
 	} else {
 		// We are in normal mode, which means we want to trade for just enough iron to fill our stockpile
 
 		// Determine the amount of iron needed to reach our target
-		var ironRequired = targetIron - resources.iron.value;
+		const ironRequired = targetIron - resources.iron.value;
 
 		// Determine how many trades are needed to get that much iron, rounded down
-		var tradesRequired = Math.floor(ironRequired / expectedIronPerTrade);
+		const tradesRequired = Math.floor(ironRequired / expectedIronPerTrade);
 
 		// If no trades are necessary, we're done
 		if (tradesRequired < 1) {
@@ -1143,7 +1139,7 @@ function tradeGriffins() {
 		}
 
 		// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-		var tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+		tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
 	}
 
 	// Perform the trades
@@ -1161,7 +1157,7 @@ function emergencyTradeFood() {
 	// We want to trade for food if our catnip reserves are dangerously low
 	// For our purposes, that means we must have enough catnip to cover our deficit until the next time this function runs, plus a few extra ticks for safety
 	// We also want to trade if we are below 2% of our maximum catnip, to cover the edge case where we have /already/ run completely out of catnip and therefore have a catnip income of 0
-	var minSafeCatnip = Math.max((-gamePage.getResourcePerTick('catnip'), true) * (dispatchFunctions.emergencyTradeFood.triggerInterval + 4), resources.catnip.maxValue * 0.02);
+	const minSafeCatnip = Math.max((-gamePage.getResourcePerTick('catnip'), true) * (dispatchFunctions.emergencyTradeFood.triggerInterval + 4), resources.catnip.maxValue * 0.02);
 	if (resources.catnip.value >  minSafeCatnip) {
 		return;
 	}
@@ -1172,7 +1168,7 @@ function emergencyTradeFood() {
 	}
 
 	// Determine how many trades are possible given our current resources, and check that this number is not 0
-	var maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.sharks);
+	const maxTradesPossible = gamePage.diplomacy.getMaxTradeAmt(races.sharks);
 	if ((maxTradesPossible === undefined) || (maxTradesPossible < 1)) {
 		return;
 	}
@@ -1182,7 +1178,7 @@ function emergencyTradeFood() {
 
 	// First, calculate the amount of the desired resource returned by each trade if it manages to return any
 	// For catnip, this is 35000 units per trade boosted by your trade ratio, modified by a seasonal modifier; there's a random variation, but it's irrelevant since it cancels itself out
-	var expectedCatnipPerTrade = 35000 * (1 + gamePage.diplomacy.getTradeRatio()) * races.sharks.sells[0].seasons[gamePage.calendar.getCurSeason().name];
+	let expectedCatnipPerTrade = 35000 * (1 + gamePage.diplomacy.getTradeRatio()) * races.sharks.sells[0].seasons[gamePage.calendar.getCurSeason().name];
 
 	// Then modify that by the effects of race relations
 	// For the Sharks, this is nothing; the Sharks are neutral, so trades never fail entirely nor return extra
@@ -1193,7 +1189,7 @@ function emergencyTradeFood() {
 
 	// We don't want to fill up our catnip stockpile; that would be unnecessarily wasteful and increase the chance that autoBuild will just deplete it again buying catnip fields or pastures
 	// Instead, our target amount is 10 times our trigger amount
-	var targetCatnip = minSafeCatnip * 10;
+	let targetCatnip = minSafeCatnip * 10;
 
 	// Sanity check: '10 times our trigger amount' might be larger than our entire stockpile, so cap it at that
 	targetCatnip = Math.min(targetCatnip, resources.catnip.maxValue);
@@ -1203,13 +1199,13 @@ function emergencyTradeFood() {
 	// We want to trade for just enough catnip to fill our stockpile to the calculated level
 
 	// Determine the amount of catnip needed to reach our target
-	var catnipRequired = targetCatnip - resources.catnip.value;
+	const catnipRequired = targetCatnip - resources.catnip.value;
 
 	// Determine how many trades are needed to get that much catnip, rounded up
-	var tradesRequired = Math.ceil(catnipRequired / expectedCatnipPerTrade);
+	const tradesRequired = Math.ceil(catnipRequired / expectedCatnipPerTrade);
 
 	// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-	var tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+	const tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
 
 
 	// Perform the trades
@@ -1220,15 +1216,15 @@ function emergencyTradeFood() {
 // Hunt automatically
 function autoHunt() {
 	// Trigger the hunt if we're within 1 tick of maxing out our catpower
-	var catpowerPerTick = gamePage.getResourcePerTick('manpower', true);
+	const catpowerPerTick = gamePage.getResourcePerTick('manpower', true);
 	if ((resources.manpower.value + catpowerPerTick) > resources.manpower.maxValue) {
 		gamePage.village.huntAll();
 	}
 
 	// Determine on which future tick our catpower resource will be maxed out, and set the dispatcher to call this function again on that tick
 	// Note that this does not /prevent/ the function from being called sooner due to another trigger condition
-	var ticksToFull = Math.floor((resources.manpower.maxValue - resources.manpower.value) / catpowerPerTick);
-	var curTick = gamePage.timer.ticksTotal;
+	const ticksToFull = Math.floor((resources.manpower.maxValue - resources.manpower.value) / catpowerPerTick);
+	const curTick = gamePage.timer.ticksTotal;
 	dispatchFunctions.autoHunt.triggerTick = curTick + ticksToFull;
 }
 
@@ -1363,7 +1359,7 @@ function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPorti
 		if ((crafting.name == 'wood') && (ingredient.name == 'catnip')) {
 			ingredient.amount = catnipEnrichmentUpgrade.researched ? 50 : 100;
 		} else if ((crafting.name == 'ship') && (ingredient.name == 'starchart')) {
-			ingredient.amount = 25 * (1 - gamePage.getHyperbolicEffect(gamePage.getEffect("satnavRatio") * satelliteBuilding.on, 0.75));
+			ingredient.amount = 25 * (1 - gamePage.getHyperbolicEffect(gamePage.getEffect('satnavRatio') * satelliteBuilding.on, 0.75));
 		}
 
 		// Calculate how much of this source resource our current stockpile of the output resource represents
@@ -1492,18 +1488,19 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 // Auto Research
 function autoResearch() {
 	if (gamePage.libraryTab.visible) {
-		var origTab = gamePage.ui.activeTabId;
+		const origTab = gamePage.ui.activeTabId;
 		gamePage.ui.activeTabId = 'Science';
 		gamePage.render();
 
-		var btn = gamePage.tabs[2].buttons;
-
-		for (var i = 0; i < btn.length; i++) {
-			if (btn[i].model.metadata.unlocked && btn[i].model.metadata.researched != true) {
+		const buttons = gamePage.tabs[2].buttons;
+		const numButtons = buttons.length;
+		for (let i = 0; i < numButtons; i++) {
+			const button = buttons[i];
+			if (button.model.metadata.unlocked && button.model.metadata.researched != true) {
 				try {
-					btn[i].controller.buyItem(btn[i].model, {}, function(result) {
+					button.controller.buyItem(button.model, {}, function(result) {
 						if (result) {
-							btn[i].update();
+							button.update();
 
 							// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 							dispatchFunctions.autoResearch.triggerImmediate = true;
@@ -1522,21 +1519,23 @@ function autoResearch() {
 	}
 }
 
-// Auto Workshop upgrade , tab 3
+
+// Auto Workshop upgrade
 function autoWorkshop() {
 	if (gamePage.workshopTab.visible) {
-		var origTab = gamePage.ui.activeTabId;
+		const origTab = gamePage.ui.activeTabId;
 		gamePage.ui.activeTabId = 'Workshop';
 		gamePage.render();
 
-		var btn = gamePage.tabs[3].buttons;
-
-		for (var i = 0; i < btn.length; i++) {
-			if (btn[i].model.metadata.unlocked && btn[i].model.metadata.researched != true) {
+		const buttons = gamePage.tabs[3].buttons;
+		const numButtons = buttons.length;
+		for (let i = 0; i < numButtons; i++) {
+			const button = buttons[i];
+			if (button.model.metadata.unlocked && button.model.metadata.researched != true) {
 				try {
-					btn[i].controller.buyItem(btn[i].model, {}, function(result) {
+					button.controller.buyItem(button.model, {}, function(result) {
 						if (result) {
-							btn[i].update();
+							button.update();
 
 							// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 							dispatchFunctions.autoWorkshop.triggerImmediate = true;
@@ -1555,77 +1554,91 @@ function autoWorkshop() {
 	}
 }
 
+
 // Festival automatically
+var dramaTech = gamePage.science.get('drama');
+var carnivalsPerk = gamePage.prestige.getPerk('carnivals');
 function autoParty() {
 	if (
-		gamePage.science.get("drama").researched
+		dramaTech.researched
 		&& (resources.manpower.value > 1500)
 		&& (resources.culture.value > 5000)
 		&& (resources.parchment.value > 2500)
 		&& (gamePage.calendar.festivalDays < 4000)
-		&& (gamePage.prestige.getPerk("carnivals").researched || (gamePage.calendar.festivalDays = 0))
+		&& (carnivalsPerk.researched || (gamePage.calendar.festivalDays = 0))
 	) {
 		gamePage.village.holdFestival(1);
 	}
 }
 
+
 // Auto assign new kittens to selected job
 function autoAssign() {
-	if (gamePage.village.getJob(autoChoice).unlocked && (gamePage.village.getFreeKittens() > 0)) {
-		gamePage.village.assignJob(gamePage.village.getJob(autoChoice));
+	const chosenJob = gamePage.village.getJob(autoChoice);
+	if (chosenJob.unlocked && (gamePage.village.getFreeKittens() > 0)) {
+		gamePage.village.assignJob(chosenJob);
 
 		// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 		dispatchFunctions.autoAssign.triggerImmediate = true;
 	}
 }
 
+
 // Control Energy Consumption
+var smelterBuilding = gamePage.bld.buildingsData[15];
+var bioLabBuilding = gamePage.bld.buildingsData[9];
+var oilWellBuilding = gamePage.bld.buildingsData[20];
+var factoryBuilding = gamePage.bld.buildingsData[22];
+var calcinerBuilding = gamePage.bld.buildingsData[16];
+var acceleratorBuilding = gamePage.bld.buildingsData[24];
 function energyControl() {
-	var proVar = gamePage.resPool.energyProd;
-	var conVar = gamePage.resPool.energyCons;
+	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
 
-	// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
-	dispatchFunctions.energyControl.triggerImmediate = true;
+	if (netEnergy <= 0) {
+		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
+		dispatchFunctions.energyControl.triggerImmediate = true;
 
-	if (bldAccelerator.val > bldAccelerator.on && proVar > (conVar + 3)) {
-		bldAccelerator.on++;
-		conVar++;
-	} else if (bldCalciner.val > bldCalciner.on && proVar > (conVar + 3)) {
-		bldCalciner.on++;
-		conVar++;
-	} else if (bldFactory.val > bldFactory.on && proVar > (conVar + 3)) {
-		bldFactory.on++;
-		conVar++;
-	} else if (bldOilWell.val > bldOilWell.on && proVar > (conVar + 3)) {
-		bldOilWell.on++;
-		conVar++;
-	} else if (bldBioLab.val > bldBioLab.on && proVar > (conVar + 3)) {
-		bldBioLab.on++;
-		conVar++;
-	} else if (bldBioLab.on > 0 && proVar < conVar) {
-		bldBioLab.on--;
-		conVar--;
-	} else if (bldOilWell.on > 0 && proVar < conVar) {
-		bldOilWell.on--;
-		conVar--;
-	} else if (bldFactory.on > 0 && proVar < conVar) {
-		bldFactory.on--;
-		conVar--;
-	} else if (bldCalciner.on > 0 && proVar < conVar) {
-		bldCalciner.on--;
-		conVar--;
-	} else if (bldAccelerator.on > 0 && proVar < conVar) {
-		bldAccelerator.on--;
-		conVar--;
-	} else {
-		// Clear the triggerImmediate flag, since no changes were actually made
-		dispatchFunctions.energyControl.triggerImmediate = false;
+		if (bioLabBuilding.on > 0) {
+			bioLabBuilding.on--;
+		} else if (oilWellBuilding.on > 0) {
+			oilWellBuilding.on--;
+		} else if (factoryBuilding.on > 0) {
+			factoryBuilding.on--;
+		} else if (calcinerBuilding.on > 0) {
+			calcinerBuilding.on--;
+		} else if (acceleratorBuilding.on > 0) {
+			acceleratorBuilding.on--;
+		} else {
+			// Clear the triggerImmediate flag, since no changes were actually made
+			dispatchFunctions.energyControl.triggerImmediate = false;
+		}
+	} else if (netEnergy > 3) {
+		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
+		dispatchFunctions.energyControl.triggerImmediate = true;
+
+		if (acceleratorBuilding.val > acceleratorBuilding.on) {
+			acceleratorBuilding.on++;
+		} else if (calcinerBuilding.val > calcinerBuilding.on) {
+			calcinerBuilding.on++;
+		} else if (factoryBuilding.val > factoryBuilding.on) {
+			factoryBuilding.on++;
+		} else if (oilWellBuilding.val > oilWellBuilding.on) {
+			oilWellBuilding.on++;
+		} else if (bioLabBuilding.val > bioLabBuilding.on) {
+			bioLabBuilding.on++;
+		} else {
+			// Clear the triggerImmediate flag, since no changes were actually made
+			dispatchFunctions.energyControl.triggerImmediate = false;
+		}
 	}
 }
 
+
+// Gather catnip
+var catnipFieldBuilding = gamePage.bld.buildingsData[0];
 function autoNip() {
-	if (gamePage.bld.buildingsData[0].val < 30) {
-		$(".btnContent:contains('Gather')").trigger("click");
+	if (catnipFieldBuilding.val < 30) {
+		$('.btnContent:contains("Gather")').trigger('click');
 
 		// Set the triggerImmediate flag for this function, so that it is called again next tick
 		dispatchFunctions.autoNip.triggerImmediate = true;
@@ -1750,6 +1763,7 @@ var dispatchOrder = [
 	'autoParty',
 	'autoPraise'
 ];
+var numDispatches = dispatchOrder.length;
 
 // This function keeps track of the game's ticks and uses math to execute these functions at set times relative to the game.
 clearInterval(runAllAutomation);
@@ -1768,7 +1782,7 @@ var runAllAutomation = setInterval(function() {
 	}
 
 	// Dispatch each function in order
-	for (let i = 0; i < dispatchOrder.length; i++) {
+	for (let i = 0; i < numDispatches; i++) {
 		curFunction = dispatchFunctions[dispatchOrder[i]];
 
 		// A function is triggered when the corresponding button is active and any of 3 conditions are true:
