@@ -70,10 +70,8 @@ var proVar = gamePage.resPool.energyProd;
 var conVar = gamePage.resPool.energyCons;
 var tickDownCounter = 1;
 var deadScript = "Script is dead";
-var furDerVal = 3;
 var autoChoice = "farmer";
 var resList = [];
-var secResRatio = 0;
 var steamOn = 0;
 var programBuild = false;
 
@@ -84,22 +82,34 @@ var resources = {};
 	const resourceNames = [
 		'alloy',
 		'beam',
+		'blueprint',
 		'catnip',
 		'coal',
+		'compedium',
 		'concrate',
 		'culture',
+		'eludium',
+		'furs',
 		'gear',
 		'gold',
 		'iron',
+		'kerosene',
 		'kittens',
 		'manpower',
+		'manuscript',
+		'megalith',
 		'minerals',
 		'oil',
 		'parchment',
+		'plate',
 		'scaffold',
+		'science',
 		'ship',
 		'slab',
+		'starchart',
 		'steel',
+		'tanker',
+		'thorium',
 		'titanium',
 		'unobtainium',
 		'uranium',
@@ -124,11 +134,14 @@ var crafts = {};
 		'gear',
 		'kerosene',
 		'manuscript',
+		'megalith',
 		'parchment',
 		'plate',
 		'scaffold',
+		'ship',
 		'slab',
 		'steel',
+		'tanker',
 		'thorium',
 		'wood',
 	];
@@ -154,6 +167,157 @@ var races = {};
 		const raceName = raceNames[i];
 		races[raceName] = gamePage.diplomacy.get(raceName);
 	}
+}
+
+
+// Controls what level of fur derivatives is autocrafted
+// Note: If you change the default value of this variable, you need to update which element of the craftFur dropdown is initially selected to match!
+var furDerVal = 4;
+
+// Controls how much of your production of each resource should be used for crafting other resources for non-fur-derivative crafts
+var craftPortion = 20;
+
+// Controls how much of your production of each resource should be used for crafting other resources for fur-derivative crafts
+var furDerivativeCraftPortion = 50;
+
+// Controls how much of a stockpile-limited resource's per-tick income can be used for crafting when it's not at its stockpile limit
+var craftIncome = 50;
+
+
+// The various crafts possible
+var craftings = [
+	{
+		name: 'wood',
+		ingredients: [
+			// The amount of catnip required to craft wood is variable based on what techs you've researched, so it gets set dynamically during crafting
+			{name: 'catnip'},
+		],
+	},
+	{
+		name: 'beam',
+		ingredients: [
+			{name: 'wood', amount: '175'},
+		],
+	},
+	{
+		name: 'slab',
+		ingredients: [
+			{name: 'minerals', amount: '250'},
+		],
+	},
+	{
+		name: 'steel',
+		ingredients: [
+			{name: 'iron', amount: '100'},
+			{name: 'coal', amount: '100'},
+		],
+	},
+	{
+		name: 'plate',
+		ingredients: [
+			{name: 'iron', amount: '125'},
+		],
+	},
+	{
+		name: 'kerosene',
+		ingredients: [
+			{name: 'oil', amount: '7500'},
+		],
+	},
+	{
+		name: 'thorium',
+		ingredients: [
+			{name: 'uranium', amount: '250'},
+		],
+	},
+	{
+		name: 'eludium',
+		ingredients: [
+			{name: 'unobtainium', amount: '1000'},
+		],
+	},
+	{
+		name: 'scaffold',
+		ingredients: [
+			{name: 'beam', amount: '50'},
+		],
+	},
+	{
+		name: 'alloy',
+		ingredients: [
+			{name: 'steel', amount: '75'},
+			{name: 'titanium', amount: '10'},
+		],
+	},
+	{
+		name: 'gear',
+		ingredients: [
+			{name: 'steel', amount: '15'},
+		],
+	},
+	{
+		name: 'concrate',
+		ingredients: [
+			{name: 'slab', amount: '2500'},
+			{name: 'steel', amount: '25'},
+		],
+	},
+	{
+		name: 'ship',
+		ingredients: [
+			{name: 'scaffold', amount: '100'},
+			{name: 'plate', amount: '150'},
+			// The number of starcharts required to craft ships is variable based on what techs you've researched and how many satellites you have, so it gets set dynamically during crafting
+			{name: 'starchart'},
+		],
+	},
+	{
+		name: 'tanker',
+		ingredients: [
+			{name: 'ship', amount: '200'},
+			{name: 'alloy', amount: '1250'},
+			{name: 'blueprint', amount: '5'},
+		],
+	},
+	{
+		name: 'megalith',
+		ingredients: [
+			{name: 'slab', amount: '50'},
+			{name: 'beam', amount: '25'},
+			{name: 'plate', amount: '5'},
+		],
+	},
+];
+var numCraftings = craftings.length;
+
+var furDerivativeCraftings = {
+	'parchment' : {
+		name: 'parchment',
+		ingredients: [
+			{name: 'furs', amount: '175'},
+		],
+	},
+	'manuscript' : {
+		name: 'manuscript',
+		ingredients: [
+			{name: 'culture', amount: '400'},
+			{name: 'parchment', amount: '25'},
+		],
+	},
+	'compedium' : {
+		name: 'compedium',
+		ingredients: [
+			{name: 'science', amount: '10000'},
+			{name: 'manuscript', amount: '50'},
+		],
+	},
+	'blueprint' : {
+		name: 'blueprint',
+		ingredients: [
+			{name: 'science', amount: '25000'},
+			{name: 'compedium', amount: '25'},
+		],
+	},
 }
 
 
@@ -261,23 +425,6 @@ var buildingsList = [
 	["tectonic"]
 ];
 
-var primaryResources = [
-	["catnip", "wood", 50],
-	["wood", "beam", 175],
-	["minerals", "slab", 250],
-	["coal", "steel", 100],
-	["iron", "plate", 125],
-	["oil", "kerosene", 7500],
-	["uranium", "thorium", 250],
-	["unobtainium", "eludium", 1000]
-];
-
-var secondaryResources = [
-	["beam", "scaffold", 50],
-	["steel", "alloy", 75],
-	["steel", "gear", 15],
-	["slab", "concrate", 2500]
-];
 
 var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 
@@ -305,14 +452,15 @@ var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 
 '<button id="autoCraft" style="color:red" onclick="autoSwitch(autoButtons.autoCraft)"> Auto Craft </button>' +
 '<select id="craftFur" size="1" onclick="setFurValue()">' +
-'<option value="1" selected="selected">Parchment</option>' +
+'<option value="0">None</option>' +
+'<option value="1">Parchment</option>' +
 '<option value="2">Manuscript</option>' +
 '<option value="3">Compendium</option>' +
-'<option value="4">Blueprint</option>' +
-'</select><br /><br />' +
-
-'<label id="secResLabel"> Secondary Craft % </label>' +
-'<span id="secResSpan" title="Between 0 and 100"><input id="secResText" type="text" style="width:25px" onchange="secResRatio = this.value" value="30"></span><br /><br />' +
+'<option value="4" selected="selected">Blueprint</option>' +
+'</select><br />' +
+'<label id="craftPortionLabel"> Craft % </label><span id="craftPortionSpan" title="Between 0 and 100"><input id="craftPortionText" type="text" style="width:25px" onchange="craftPortion = this.value" value="' + craftPortion + '"></span><br />' +
+'<label id="furDerivativeCraftPortionLabel"> Fur Craft % </label><span id="furDerivativeCraftPortionSpan" title="Between 0 and 100"><input id="furDerivativeCraftPortionText" type="text" style="width:25px" onchange="furDerivativeCraftPortion = this.value" value="' + furDerivativeCraftPortion + '"></span><br />' +
+'<label id="craftIncomeLabel"> Income Diversion % </label><span id="craftIncomeSpan" title="Between 0 and 100"><input id="craftIncomeText" type="text" style="width:25px" onchange="craftIncome = this.value" value="' + craftIncome + '"></span><br /><br />' +
 
 '<button id="autoHunt" style="color:red" onclick="autoSwitch(autoButtons.autoHunt)"> Auto Hunt </button><br />' +
 '<button id="autoTrade" style="color:red" onclick="autoSwitch(autoButtons.autoTrade)"> Auto Trade </button><br />' +
@@ -323,7 +471,7 @@ var htmlMenuAddition = '<div id="farRightColumn" class="column">' +
 '<button id="autoScience" style="color:red" onclick="autoSwitch(autoButtons.autoScience)"> Auto Science </button><br />' +
 '<button id="autoUpgrade" style="color:red" onclick="autoSwitch(autoButtons.autoUpgrade)"> Auto Upgrade </button><br />' +
 '<button id="autoEnergy" style="color:red" onclick="autoSwitch(autoButtons.autoEnergy)"> Energy Control </button><br />' +
-'<button id="autoParty" style="color:red" onclick="autoSwitch(autoButtons.autoParty)"> Auto Party </button><br /><br />' +
+'<button id="autoParty" style="color:red" onclick="autoSwitch(autoButtons.autoParty)"> Auto Party </button>' +
 '</div>' +
 '</div>';
 
@@ -1086,42 +1234,262 @@ function autoHunt() {
 	dispatchFunctions.autoHunt.triggerTick = curTick + ticksToFull;
 }
 
+
 // Craft primary resources automatically
 function autoCraft() {
-	// Perform no crating during temporal paradox
+	// Perform no crafting during temporal paradox
 	if (gamePage.calendar.day < 0) {
 		return;
 	}
 
-	for (var i = 0; i < primaryResources.length; i++) {
-		var curRes = resources[primaryResources[i][0]];
-		var resourcePerTick = gamePage.getResourcePerTick(primaryResources[i][0], true);
-		var resourcePerCraft = (resourcePerTick * dispatchFunctions.autoCraft.triggerInterval);
-		if (curRes.value > (curRes.maxValue - resourcePerCraft) && crafts[primaryResources[i][1]].unlocked) {
-			gamePage.craft(primaryResources[i][1], (resourcePerCraft / primaryResources[i][2]));
+	// Perform all the non-fur-derivative craftings
+	let ironCrafted = 0;
+	const targetCraftPortion = craftPortion / 100;
+	const baseIncomeDivertPortion = craftIncome / 100;
+	for (let i = 0; i < numCraftings; i++) {
+		const crafting = craftings[i];
+
+		// The proportion of per-tick income to divert is controlled by the value in the text box, with the following exceptions:
+		//   * For catnip-to-wood, we want to halt income diversion once our direct wood income is greater than 1 unit per tick; only in the early game, when we have little or no direct wood income, is diverting catnip for conversion useful; later on, our direct wood income greatly dominates what we could get by converting catnip, so it's better to save the catnip to fill the stockpile faster
+		//   * For unobtainium-to-eludium, we want to halt income diversion any time the Leviathans are available for trade, to maximize the number of trades we can perform with them before they leave
+		const incomeDivertPortion = (
+				((crafting.name == 'wood') && (gamePage.getResourcePerTick('wood', true) > 1))
+				|| ((crafting.name == 'eludium') && races.leviathans.unlocked && (races.leviathans.duration > 0))
+			) ? 0 : baseIncomeDivertPortion;
+
+		// When crafting steel, we cap the first ingredient (iron) at 75% of the available amount, to ensure some is left over for crafting plates; otherwise we apply no cap
+		const incomeCapPortion = (crafting.name == 'steel') ? 0.75 : 1;
+
+		// When crafting plates, we must consider the iron spent on crafting steel when calculating how much is still available for crafting
+		const incomeAlredySpent = (crafting.name == 'plate') ? ironCrafted : 0;
+
+		// Perform the crafting
+		const firstIngredientConsumed = craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPortion, incomeAlredySpent);
+
+		// After crafting steel, we must record how much iron was spent so it can be accounted for when later crafting plates
+		if (crafting.name == 'steel') {
+			ironCrafted += firstIngredientConsumed;
 		}
 	}
 
-	// Craft secondary resources automatically if primary craftable is > secondary craftable
-	for (var i = 0; i < secondaryResources.length; i++) {
-		var priRes = resources[secondaryResources[i][0]];
-		var secRes = resources[secondaryResources[i][1]];
-		var resMath = priRes.value / secondaryResources[i][2];
 
-		if (resMath > 1 && secRes.value < (priRes.value * (secResRatio / 100)) && crafts[secondaryResources[i][1]].unlocked) {
-			gamePage.craft(secondaryResources[i][1], (resMath * (secResRatio / 100)));
-		}
+	// If the fur derivatives dropdown is set to 'None' (value 0), we're done, otherwise we need to craft the fur derivative
+	if (furDerVal <= 0) {
+		return;
 	}
 
 
-	//Craft the fur derivatives
-	var furDerivatives = ['parchment', 'manuscript', 'compedium', 'blueprint'];
-	for (var i = 0; i < furDerVal; i++) {
-		if (crafts[furDerivatives[i]].unlocked) {
-			gamePage.craftAll(furDerivatives[i]);
-		}
+	// Craft fur into parchment
+	const targetFurDerivativeCraftPortion = furDerivativeCraftPortion / 100;
+	craft(furDerivativeCraftings.parchment, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+
+	// If the fur derivatives dropdown is set to 'Parchment' (value 1), we're done
+	if (furDerVal <= 1) {
+		return;
+	}
+
+
+	// Craft parchment into manuscripts
+	craft(furDerivativeCraftings.manuscript, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+
+	// If the fur derivatives dropdown is set to 'Manuscript' (value 2), we're done
+	if (furDerVal <= 2) {
+		return;
+	}
+
+
+	// Check whether we're crafting just compedia (fur derivatives dropdown set to 'Compendium' (value 3)) or both compedia and blueprints (fur derivatives dropdown set to 'Blueprint' (value 4))
+	if (furDerVal <= 3) {
+		// Craft manuscripts into compedia, using all available science
+		craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+	} else {
+		// Craft manuscripts into compedia, using no more than 25% of the available science, and record how much science was used in the process
+		let scienceCrafted = craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 0.25, 0);
+
+		// Craft compedia into blueprints, using as much of the remaining available science as possible, and record how much science was used in the process
+		scienceCrafted += craft(furDerivativeCraftings.blueprint, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
+
+		// Craft manuscripts into compedia again, to use up any remaining available science
+		craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
 	}
 }
+
+var catnipEnrichmentUpgrade = gamePage.workshop.get('advancedRefinement');
+var satelliteBuilding = gamePage.space.getBuilding('sattelite');
+function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPortion, incomeAlredySpent) {
+	// Sanity check: make sure this resource is in the resource and craft caches
+	if (!(crafting.name in crafts)) {
+		console.log('Unkown craft ' + crafting.name);
+		return 0;
+	}
+	if (!(crafting.name in resources)) {
+		console.log('Unkown resource ' + crafting.name);
+		return 0;
+	}
+
+	const outputResource = resources[crafting.name];
+
+	// Check that this craft is unlocked
+	if (!crafts[crafting.name].unlocked) {
+		return 0;
+	}
+
+	// Calculate how much of this resource will be produced per crafting
+	const outputResourceGeneratedPerCrafting = gamePage.getResCraftRatio(outputResource) + 1;
+
+	// Calculate how many craftings our current stockpile of this resource represents
+	const outputResourceExistingCraftings = outputResource.value / outputResourceGeneratedPerCrafting;
+
+	// Check each source resource to find the number of craftings we can perform
+	let craftingsToPerform = Infinity;
+	const numIngredients = crafting.ingredients.length;
+	for (let i = 0; i < numIngredients; i++) {
+		const ingredient = crafting.ingredients[i];
+		const sourceResource = resources[ingredient.name];
+
+		// Sanity check: make sure this resource is in the resource and craft caches
+		if (!(ingredient.name in resources)) {
+			console.log('Unkown resource ' + ingredient.name);
+			return 0;
+		}
+
+		// If this source resource has a stockpile limit, and that limit is to small to perform one full crafting of the output resource, perform no craftings
+		// This is to prevent autoCraft from becoming an exploit  by producing resources, mainly eludium, that you shouldn't be able to craft at all yet
+		if (sourceResource.maxValue && (sourceResource.maxValue < ingredient.amount)) {
+			return 0;
+		}
+
+		// Special cases:
+		//   * When crafting wood, the amount of catnip required per crafting depends on if you've researched Catnip Enrichment
+		//   * When crafting ships, if you've researched Satellite Navigation, the number of starcharts required per crafting depends on how many satellites you have
+		if ((crafting.name == 'wood') && (ingredient.name == 'catnip')) {
+			ingredient.amount = catnipEnrichmentUpgrade.researched ? 50 : 100;
+		} else if ((crafting.name == 'ship') && (ingredient.name == 'starchart')) {
+			ingredient.amount = 25 * (1 - gamePage.getHyperbolicEffect(gamePage.getEffect("satnavRatio") * satelliteBuilding.on, 0.75));
+		}
+
+		// Calculate how much of this source resource our current stockpile of the output resource represents
+		const alreadyCraftedEquivelent = outputResourceExistingCraftings * ingredient.amount;
+
+		// Calculate how much of this source resource is available for crafting
+		const sourceResourceAvailableForCrafting = resourceAvailableForCrafting(ingredient.name, targetCraftPortion, alreadyCraftedEquivelent, incomeDivertPortion, incomeCapPortion, incomeAlredySpent);
+
+		// The supplied incomeCapPortion and incomeAlredySpent values apply only to the first source resource
+		incomeCapPortion = 1;
+		incomeAlredySpent = 0;
+
+		// If we have no resources to craft, craft nothing
+		// We use 0.0001 rather than 0 as our minimum to avoid extremely small craftings due to floating point accuracy limits
+		if (sourceResourceAvailableForCrafting <= 0.0001) {
+			return 0;
+		}
+
+		// Calculate the maximum number of craftings we can perform from this resource
+		const maxCraftingsPossible = sourceResourceAvailableForCrafting / ingredient.amount;
+
+		// If we cannot perform as many craftings as we were planning to, reduce the number we were planning to perform
+		craftingsToPerform = Math.min(craftingsToPerform, maxCraftingsPossible);
+	}
+
+
+	// Special case: When crafting catnip-to-wood, we potentially need to make room in the wood stockpile first
+	if (crafting.name == 'wood' && crafts.beam.unlocked) {
+		// Calculate how much wood we are about to create
+		const totalWoodGenerated = outputResourceGeneratedPerCrafting * craftingsToPerform;
+
+		// Calculate how much of this wood would be wasted
+		const woodOverflow = resources.wood.value + totalWoodGenerated - resources.wood.maxValue;
+
+		// Craft the excess wood into beams
+		if (woodOverflow > 0.0001) {
+			const beamCraftingsToPerform = woodOverflow / 175;
+			gamePage.craft('beam', beamCraftingsToPerform);
+		}
+	}
+
+
+	// Perform the craftings
+	gamePage.craft(crafting.name, craftingsToPerform);
+
+	// Calculate and return how much of the first ingredient was used by the craftings
+	return craftingsToPerform * crafting.ingredients[0].amount;
+}
+
+function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyCraftedEquivelent, incomeDivertPortion, incomeCapPortion, incomeAlredySpent) {
+	const curResource = resources[resourceName];
+
+	// Special case: Fur
+	if (resourceName == 'furs') {
+		// We want to keep a reserve of furs large enough to last until the next hunt, so that we never lose the +10% happiness bonus from having fur in stock
+
+		// Calculate the number of ticks until the next hunt, plus 2 as a safety margin
+		const ticksReserveRequired = Math.floor((resources.manpower.maxValue - resources.manpower.value) / gamePage.getResourcePerTick('manpower', true)) + 2;
+
+		// Calculate how much fur will be consumed until then, or 0 if our fur income is positive
+		const furReserveRequired = Math.max(-gamePage.getResourcePerTick('furs', true) * ticksReserveRequired, 0);
+
+		// Reserve the calculated amount of fur, plus 100 units
+		const targetFur = furReserveRequired + 100;
+
+		// The amount of fur available for crafting is everything beyond the calculated target (minimum 0)
+		return Math.max(curResource.value - targetFur, 0);
+	}
+
+
+	// Our goal is to use a fixed percentage of our production of each source resource for crafting; calculate, from the amount of this resource we have stockpiled and the amount that has already been crafted, how much we need to craft now to make that so
+
+	// Calculate the total amount of this resource in the system
+	const totalResourceAmount = curResource.value + alreadyCraftedEquivelent;
+
+	// Multiply that total by the desired crafting portion to find the amount that should be crafted
+	const targetCraftedResource = totalResourceAmount * targetCraftPortion;
+
+	// Finally, subtract the amount already crafted to find the amount that needs to be crafted (minimum 0)
+	let availableForCrafting = Math.max(targetCraftedResource - alreadyCraftedEquivelent, 0);
+
+
+	// For resources which have a stockpile limit, there are additional complications
+	if (curResource.maxValue) {
+		// If this resource's stockpile is substantially over its limit, we don't want to craft anything, because an overfull stockpile can be used to purchase buildings or upgrades that cost more than the normal stockpile limit
+		// Coal is exempted from this, since it has no uses whatsoever /except/ for crafting
+		if ((resourceName != 'coal') && (curResource.value > (curResource.maxValue * 1.1))) {
+			return 0;
+		}
+
+		const resourceIncome = Math.max(gamePage.getResourcePerTick(resourceName, true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+
+		// We want to divert a certain percentage of our per-tick income of this resource to crafting, even if we are nowhere near the stockpile limit
+
+		// First, take the specified diversion portion from our per-tick income
+		const divertedIncome = resourceIncome * incomeDivertPortion;
+
+		// We may have already spent some of the divertable income for this resource crafting other things this turn; if so subtract that to find the amount still available (minimum 0)
+		const divertedIncomeRemaining = Math.max(divertedIncome - incomeAlredySpent, 0);
+
+		// We may wish to only use a part of the diverted income on this craft, so as to save some for other crafts later
+		const cappedDivertedIncome = divertedIncomeRemaining * incomeCapPortion;
+
+		// We use either the calculated income diversion or the previously calculated target-total-crafted-amount; that way, if we already have a large amount of the crafted resource, our full income goes to rebuilding our stockpile
+		availableForCrafting = Math.min(availableForCrafting, cappedDivertedIncome);
+
+
+		// If this resource is near its stockpile limit, we want to use up enough of the resource in crafting to prevent overflow
+
+		// First, calculate the potential overflow
+		const resourceOverflow = (curResource.value + resourceIncome) - curResource.maxValue;
+
+		// We may wish to only use a part of the overflow on this craft, so as to save some for other crafts later
+		const cappedOverflow = resourceOverflow * incomeCapPortion;
+
+		// If the overflow exceeds the previously calculated target-total-crafted-amount, we use the overflow, since it would be wasted otherwise
+		availableForCrafting = Math.max(availableForCrafting, cappedOverflow);
+	}
+
+
+	// Return the calculated amount
+	return availableForCrafting;
+}
+
 
 // Auto Research
 function autoResearch() {
