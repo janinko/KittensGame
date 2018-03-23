@@ -66,8 +66,6 @@ var bldCalciner = gamePage.bld.buildingsData[16];
 var bldAccelerator = gamePage.bld.buildingsData[24];
 
 // These are the assorted variables
-var proVar = gamePage.resPool.energyProd;
-var conVar = gamePage.resPool.energyCons;
 var tickDownCounter = 1;
 var deadScript = "Script is dead";
 var autoChoice = "farmer";
@@ -1583,6 +1581,9 @@ function autoAssign() {
 
 // Control Energy Consumption
 function energyControl() {
+	var proVar = gamePage.resPool.energyProd;
+	var conVar = gamePage.resPool.energyCons;
+
 	// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
 	dispatchFunctions.energyControl.triggerImmediate = true;
 
