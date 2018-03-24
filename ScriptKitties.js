@@ -1662,7 +1662,7 @@ function energyControl() {
 		dispatchFunctions.energyControl.triggerImmediate = true;
 
 		if (biofuelsUpgrade.researched && (bioLabBuilding.on > 0)) {
-			// Only turn off bio labs if the Biofuels PRocessing upgrade has been researched; if it hasn't been, they don't actually use any power anyway
+			// Only turn off bio labs if the Biofuels Processing upgrade has been researched; if it hasn't been, they don't actually use any power anyway
 			bioLabBuilding.on--;
 		} else if (pumpjackUpgrade.researched && (oilWellBuilding.on > 0)) {
 			// Only turn off oil wells if the Pumpjack upgrade has been researched; if it hasn't been, they don't actually use any power anyway
