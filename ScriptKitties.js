@@ -689,9 +689,6 @@ function autoBuild() {
 
 								// Set the triggerImmediate flag for this function, indicating it should be called again next tick
 								dispatchFunctions.autoBuild.triggerImmediate = true;
-
-
-
 							}
 						});
 					}
@@ -1539,12 +1536,6 @@ function autoResearch() {
 	const origTab = gamePage.ui.activeTabId;
 	gamePage.ui.activeTabId = 'Science';
 	gamePage.render();
-
-
-
-
-
-
 
 	const buttons = gamePage.tabs[2].buttons;
 	const numButtons = buttons.length;
