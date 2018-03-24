@@ -1466,6 +1466,16 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 	}
 
 
+	// Special case: Coal
+	if (resourceName == 'coal') {
+		// Coal has no useful purposes whatsoever except for being crafted into steel. Therefore, we should always be willing to diver 100% of our income towards crafting rather than trying to build up a stockpile...
+		incomeDivertPortion = 1;
+
+		// ... and we should always be willing to craft as much as possible, no matter how much has already been crafted
+		targetCraftPortion = 1;
+	}
+
+
 	// Our goal is to use a fixed percentage of our production of each source resource for crafting; calculate, from the amount of this resource we have stockpiled and the amount that has already been crafted, how much we need to craft now to make that so
 
 	// Calculate the total amount of this resource in the system
