@@ -1438,6 +1438,11 @@ function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPorti
 	}
 
 
+	// Sanity check: we cannot perform infinite craftings, nor negative craftings
+	if ((craftingsToPerform < 0) || (craftingsToPerform == Infinity)) {
+		craftingsToPerform = 0;
+	}
+
 	// Perform the craftings
 	gamePage.craft(crafting.name, craftingsToPerform);
 
@@ -1526,8 +1531,8 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 	}
 
 
-	// Sanity check: we cannot craft more than we have
-	availableForCrafting = Math.min(availableForCrafting, curResource.value);
+	// Sanity check: we cannot craft more than we have, nor less than 0
+	availableForCrafting = Math.max(Math.min(availableForCrafting, curResource.value), 0);
 
 
 	// Return the calculated amount
