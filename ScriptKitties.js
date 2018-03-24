@@ -1519,6 +1519,10 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 	}
 
 
+	// Sanity check: we cannot craft more than we have
+	availableForCrafting = Math.min(availableForCrafting, curResource.value);
+
+
 	// Return the calculated amount
 	return availableForCrafting;
 }
