@@ -177,14 +177,7 @@ var craftThoriumShortfall = false;
 
 
 // Defines the various crafts possible
-var craftings = [
-	{
-		name: 'wood',
-		ingredients: [
-			// The amount of catnip required to craft wood is variable based on what techs you've researched, so it gets set dynamically during crafting
-			{name: 'catnip'},
-		],
-	},
+var mainCraftings = [
 	{
 		name: 'beam',
 		ingredients: [
@@ -280,9 +273,16 @@ var craftings = [
 		],
 	},
 ];
-var numCraftings = craftings.length;
+var numMainCraftings = mainCraftings.length;
 
-var furDerivativeCraftings = {
+var specialCraftings = {
+	'wood': {
+		name: 'wood',
+		ingredients: [
+			// The amount of catnip required to craft wood is variable based on what techs you've researched, so it gets set dynamically during crafting
+			{name: 'catnip'},
+		],
+	},
 	'parchment' : {
 		name: 'parchment',
 		ingredients: [
@@ -1241,25 +1241,38 @@ function autoHunt() {
 
 // Craft primary resources automatically
 function autoCraft() {
+	const targetCraftPortion = craftPortion / 100;
+	const baseIncomeDivertPortion = craftIncome / 100;
+
+
 	// Perform no crafting during temporal paradox
 	if (gamePage.calendar.day < 0) {
 		return;
 	}
 
-	// Perform all the non-fur-derivative craftings
-	let ironCrafted = 0;
-	const targetCraftPortion = craftPortion / 100;
-	const baseIncomeDivertPortion = craftIncome / 100;
-	for (let i = 0; i < numCraftings; i++) {
-		const crafting = craftings[i];
 
-		// The proportion of per-tick income to divert is controlled by the value in the text box, with the following exceptions:
-		//   * For catnip-to-wood, we want to halt income diversion once our direct wood income is greater than 1 unit per tick; only in the early game, when we have little or no direct wood income, is diverting catnip for conversion useful; later on, our direct wood income greatly dominates what we could get by converting catnip, so it's better to save the catnip to fill the stockpile faster
-		//   * For unobtainium-to-eludium, we want to halt income diversion any time the Leviathans are available for trade, to maximize the number of trades we can perform with them before they leave
-		const incomeDivertPortion = (
-				((crafting.name == 'wood') && (gamePage.getResourcePerTick('wood', true) > 1))
-				|| ((crafting.name == 'eludium') && races.leviathans.unlocked && (races.leviathans.duration > 0))
-			) ? 0 : baseIncomeDivertPortion;
+	// Craft catnip-to-wood
+
+	// For catnip-to-wood, we want to halt income diversion once our direct wood income is greater than 1 unit per tick; only in the early game, when we have little or no direct wood income, is diverting catnip for conversion useful; later on, our direct wood income greatly dominates what we could get by converting catnip, so it's better to save the catnip to fill the stockpile faster
+	const incomeDivertPortion = (gamePage.getResourcePerTick('wood', true) > 1) ? 0 : baseIncomeDivertPortion;
+
+	// Perform the crafting
+	craft(specialCraftings.wood, targetCraftPortion, incomeDivertPortion, 1, 0);
+
+
+	// If the workshop tab has not been unlocked, catnip-to-wood is the only crafting we can actually do
+	if (!gamePage.workshopTab.visible) {
+		return;
+	}
+
+
+	// Perform all the other non-fur-derivative craftings
+	let ironCrafted = 0;
+	for (let i = 0; i < numMainCraftings; i++) {
+		const crafting = mainCraftings[i];
+
+		// The proportion of per-tick income to divert is controlled by the value in the text box, except that, for unobtainium-to-eludium, we want to halt income diversion any time the Leviathans are available for trade, so as to maximize the number of trades we can perform with them before they leave
+		const incomeDivertPortion = ((crafting.name == 'eludium') && races.leviathans.unlocked && (races.leviathans.duration > 0)) ? 0 : baseIncomeDivertPortion;
 
 		// When crafting steel, we cap the first ingredient (iron) at 75% of the available amount, to ensure some is left over for crafting plates; otherwise we apply no cap
 		const incomeCapPortion = (crafting.name == 'steel') ? 0.75 : 1;
@@ -1285,7 +1298,7 @@ function autoCraft() {
 
 	// Craft fur into parchment
 	const targetFurDerivativeCraftPortion = furDerivativeCraftPortion / 100;
-	craft(furDerivativeCraftings.parchment, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+	craft(specialCraftings.parchment, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
 
 	// If the fur derivatives dropdown is set to 'Parchment' (value 1), we're done
 	if (furDerVal <= 1) {
@@ -1294,7 +1307,7 @@ function autoCraft() {
 
 
 	// Craft parchment into manuscripts
-	craft(furDerivativeCraftings.manuscript, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+	craft(specialCraftings.manuscript, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
 
 	// If the fur derivatives dropdown is set to 'Manuscript' (value 2), we're done
 	if (furDerVal <= 2) {
@@ -1305,16 +1318,16 @@ function autoCraft() {
 	// Check whether we're crafting just compedia (fur derivatives dropdown set to 'Compendium' (value 3)) or both compedia and blueprints (fur derivatives dropdown set to 'Blueprint' (value 4))
 	if (furDerVal <= 3) {
 		// Craft manuscripts into compedia, using all available science
-		craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
+		craft(specialCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
 	} else {
 		// Craft manuscripts into compedia, using no more than 25% of the available science, and record how much science was used in the process
-		let scienceCrafted = craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 0.25, 0);
+		let scienceCrafted = craft(specialCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 0.25, 0);
 
 		// Craft compedia into blueprints, using as much of the remaining available science as possible, and record how much science was used in the process
-		scienceCrafted += craft(furDerivativeCraftings.blueprint, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
+		scienceCrafted += craft(specialCraftings.blueprint, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
 
 		// Craft manuscripts into compedia again, to use up any remaining available science
-		craft(furDerivativeCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
+		craft(specialCraftings.compedium, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, scienceCrafted);
 	}
 }
 
