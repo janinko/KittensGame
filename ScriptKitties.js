@@ -1583,12 +1583,6 @@ function autoWorkshop() {
 	gamePage.ui.activeTabId = 'Workshop';
 	gamePage.render();
 
-
-
-
-
-
-
 	const buttons = gamePage.tabs[3].buttons;
 	const numButtons = buttons.length;
 	for (let i = 0; i < numButtons; i++) {
@@ -1654,6 +1648,8 @@ var oilWellBuilding = gamePage.bld.buildingsData[20];
 var factoryBuilding = gamePage.bld.buildingsData[22];
 var calcinerBuilding = gamePage.bld.buildingsData[16];
 var acceleratorBuilding = gamePage.bld.buildingsData[24];
+var biofuelsUpgrade = gamePage.workshop.get('biofuel');
+var pumpjackUpgrade = gamePage.workshop.get('pumpjack');
 function energyControl() {
 	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
 
@@ -1661,9 +1657,11 @@ function energyControl() {
 		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
 		dispatchFunctions.energyControl.triggerImmediate = true;
 
-		if (bioLabBuilding.on > 0) {
+		if (biofuelsUpgrade.researched && (bioLabBuilding.on > 0)) {
+			// Only turn off bio labs if the Biofuels PRocessing upgrade has been researched; if it hasn't been, they don't actually use any power anyway
 			bioLabBuilding.on--;
-		} else if (oilWellBuilding.on > 0) {
+		} else if (pumpjackUpgrade.researched && (oilWellBuilding.on > 0)) {
+			// Only turn off oil wells if the Pumpjack upgrade has been researched; if it hasn't been, they don't actually use any power anyway
 			oilWellBuilding.on--;
 		} else if (factoryBuilding.on > 0) {
 			factoryBuilding.on--;
