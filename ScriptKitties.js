@@ -172,6 +172,9 @@ var furDerivativeCraftPortion = 50;
 // Controls how much of a stockpile-limited resource's per-tick income can be used for crafting when it's not at its stockpile limit
 var craftIncome = 50;
 
+// Controls whether autoCraft() will craft extra thorium to prevent a shortfall
+var craftThoriumShortfall = false;
+
 
 // Defines the various crafts possible
 var craftings = [
@@ -454,7 +457,8 @@ var buildingsList = [
 	'</select><br />' +
 	'<label id="craftPortionLabel"> Craft % </label><span id="craftPortionSpan" title="Between 0 and 100"><input id="craftPortionText" type="text" style="width:25px" onchange="craftPortion = this.value" value="' + craftPortion + '"></span><br />' +
 	'<label id="furDerivativeCraftPortionLabel"> Fur Craft % </label><span id="furDerivativeCraftPortionSpan" title="Between 0 and 100"><input id="furDerivativeCraftPortionText" type="text" style="width:25px" onchange="furDerivativeCraftPortion = this.value" value="' + furDerivativeCraftPortion + '"></span><br />' +
-	'<label id="craftIncomeLabel"> Income Diversion % </label><span id="craftIncomeSpan" title="Between 0 and 100"><input id="craftIncomeText" type="text" style="width:25px" onchange="craftIncome = this.value" value="' + craftIncome + '"></span><br /><br />' +
+	'<label id="craftIncomeLabel"> Income Diversion % </label><span id="craftIncomeSpan" title="Between 0 and 100"><input id="craftIncomeText" type="text" style="width:25px" onchange="craftIncome = this.value" value="' + craftIncome + '"></span><br />' +
+	'<input id= "craftThoriumShortfall" type="checkbox" onclick="craftThoriumShortfall = this.checked" /><label for="craftThoriumShortfall">Prevent thorium shortages</label><br /><br />' +
 
 	'<button id="autoHunt" style="color:red" onclick="autoSwitch(autoButtons.autoHunt)"> Auto Hunt </button><br />' +
 	'<button id="autoTrade" style="color:red" onclick="autoSwitch(autoButtons.autoTrade)"> Auto Trade </button><br />' +
@@ -462,6 +466,7 @@ var buildingsList = [
 	'<input id= "tradeMaxCoal" type="checkbox" onclick="tradeMax.coal = this.checked" /><label for="tradeMaxCoal">Maximize coal trades</label><br />' +
 	'<input id= "tradeMaxIron" type="checkbox" onclick="tradeMax.iron = this.checked" /><label for="tradeMaxIron">Maximize iron trades</label><br />' +
 	'<button id="autoPraise" style="color:red" onclick="autoSwitch(autoButtons.autoPraise)"> Auto Praise </button><br /><br />' +
+
 	'<button id="autoScience" style="color:red" onclick="autoSwitch(autoButtons.autoScience)"> Auto Science </button><br />' +
 	'<button id="autoUpgrade" style="color:red" onclick="autoSwitch(autoButtons.autoUpgrade)"> Auto Upgrade </button><br />' +
 	'<button id="autoEnergy" style="color:red" onclick="autoSwitch(autoButtons.autoEnergy)"> Energy Control </button><br />' +
@@ -1395,7 +1400,7 @@ function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPorti
 
 
 	// Special case: When crafting catnip-to-wood, we potentially need to make room in the wood stockpile first
-	if (crafting.name == 'wood' && crafts.beam.unlocked) {
+	if ((crafting.name == 'wood') && crafts.beam.unlocked) {
 		// Calculate how much wood we are about to create
 		const totalWoodGenerated = outputResourceGeneratedPerCrafting * craftingsToPerform;
 
@@ -1406,6 +1411,32 @@ function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPorti
 		if (woodOverflow > 0.0001) {
 			const beamCraftingsToPerform = woodOverflow / 175;
 			gamePage.craft('beam', beamCraftingsToPerform);
+		}
+	}
+
+
+	// Special case: When crafting uranium-to-thorium, if the appropriate switch is set, override the normal crafting limits to ensure we produce enough thorium to supply our reactors
+	if (craftThoriumShortfall && (crafting.name == 'thorium')) {
+		// FIXME: getResourcePerTick() always returns 0 for thorium due to a bug in the game code; using a manual calculation as a workaround for now
+		//const thoriumConsumption = -gamePage.getResourcePerTick('thorium', true);
+		const reactorBuilding = gamePage.bld.buildingsData[23];
+		const thoriumConsumption = reactorBuilding.isAutomationEnabled ? (reactorBuilding.on * 0.05) : 0;
+
+		// Calculate how much thorium we need until the next call of autoCraft, plus a buffer
+		const targetThorium = (thoriumConsumption * (dispatchFunctions.autoCraft.triggerInterval + 2)) + 10;
+
+		// Calculate how much more thorium we need to craft to reach that
+		const thoriumShortage = targetThorium - resources.thorium.value;
+		if (thoriumShortage > 0) {
+			// Calculate how many craftings we need to perform to get that much thorium
+			const craftingsRequired = thoriumShortage / outputResourceGeneratedPerCrafting;
+
+			// If that number is more than we had previously planned to do, we use that number instead
+			craftingsToPerform = Math.max(craftingsToPerform, craftingsRequired);
+
+			// However, we cannot perform more craftings than we actually have uranium for
+			const maxCraftingsPossible = resources.uranium.value / 250;
+			craftingsToPerform = Math.min(craftingsToPerform, maxCraftingsPossible);
 		}
 	}
 
