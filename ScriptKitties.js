@@ -1249,15 +1249,22 @@ function autoHunt() {
 
 
 // Craft primary resources automatically
+var pyramidsBuilding = gamePage.religion.getZU('blackPyramid');
 function autoCraft() {
-	const targetCraftPortion = craftPortion / 100;
-	const baseIncomeDivertPortion = craftIncome / 100;
-
-
 	// Perform no crafting during temporal paradox
 	if (gamePage.calendar.day < 0) {
 		return;
 	}
+
+
+	// The target portion of our supply of each resource which we wish to use for non-fur-derivative crafting is controlled by the value in the appropriate text box
+	const baseTargetCraftPortion = craftPortion / 100;
+
+	// The target portion of our supply of each resource which we wish to use for fur-derivative crafting is controlled by the value in the appropriate text box
+	const targetFurDerivativeCraftPortion = furDerivativeCraftPortion / 100;
+
+	// The maximum proportion of per-tick income, for stockpile-limited resource, to divert to crafting instead of being used to build up the stockpile is controlled by the value in the appropriate text box
+	const baseIncomeDivertPortion = craftIncome / 100;
 
 
 	// Craft catnip-to-wood
@@ -1266,7 +1273,7 @@ function autoCraft() {
 	const incomeDivertPortion = (gamePage.getResourcePerTick('wood', true) > 1) ? 0 : baseIncomeDivertPortion;
 
 	// Perform the crafting
-	craft(specialCraftings.wood, targetCraftPortion, incomeDivertPortion, 1, 0);
+	craft(specialCraftings.wood, baseTargetCraftPortion, incomeDivertPortion, 1, 0);
 
 
 	// If the workshop tab has not been unlocked, catnip-to-wood is the only crafting we can actually do
@@ -1280,17 +1287,24 @@ function autoCraft() {
 	for (let i = 0; i < numMainCraftings; i++) {
 		const crafting = mainCraftings[i];
 
-		// The proportion of per-tick income to divert is controlled by the value in the text box, except that, for unobtainium-to-eludium, we want to halt income diversion any time the Leviathans are available for trade, so as to maximize the number of trades we can perform with them before they leave
+		// In the very late game, when you have a lot of Black Pyramids, Markers, and Cryostations, it is possible for the Leviathans to be available for trading so often and your unobtainium stockpile limit to be so large that you almost never actually /hit/ your stockpile limit
+		// Therefore, once we have Black Pyramids and can trade with the Leviathans, we want to override the target-percentage-crafted limit to ensure that at we are always diverting the maximum amount of the unobtainium's per-tick income to crafting
+		const targetCraftPortion = ((crafting.name == 'eludium') && (pyramidsBuilding.val > 0)) ? 1 : baseTargetCraftPortion;
+
+		// However, whenever the Leviathans are actually present to do trading, we wish to halt eludium income diversion entirely, so as to maximize the number of trades we can perform with them before they leave
 		const incomeDivertPortion = ((crafting.name == 'eludium') && races.leviathans.unlocked) ? 0 : baseIncomeDivertPortion;
+
 
 		// When crafting steel, we cap the first ingredient (iron) at 75% of the available amount, to ensure some is left over for crafting plates; otherwise we apply no cap
 		const incomeCapPortion = (crafting.name == 'steel') ? 0.75 : 1;
 
-		// When crafting plates, we must consider the iron spent on crafting steel when calculating how much is still available for crafting
+		// Then when crafting plates, we must consider the iron already spent on crafting steel when calculating how much is still available for crafting
 		const incomeAlredySpent = (crafting.name == 'plate') ? ironCrafted : 0;
+
 
 		// Perform the crafting
 		const firstIngredientConsumed = craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPortion, incomeAlredySpent);
+
 
 		// After crafting steel, we must record how much iron was spent so it can be accounted for when later crafting plates
 		if (crafting.name == 'steel') {
@@ -1306,7 +1320,6 @@ function autoCraft() {
 
 
 	// Craft fur into parchment
-	const targetFurDerivativeCraftPortion = furDerivativeCraftPortion / 100;
 	craft(specialCraftings.parchment, targetFurDerivativeCraftPortion, baseIncomeDivertPortion, 1, 0);
 
 	// If the fur derivatives dropdown is set to 'Parchment' (value 1), we're done
