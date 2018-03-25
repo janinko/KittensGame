@@ -1436,13 +1436,10 @@ function craft(crafting, targetCraftPortion, incomeDivertPortion, incomeCapPorti
 
 	// Special case: When crafting uranium-to-thorium, if the appropriate switch is set, override the normal crafting limits to ensure we produce enough thorium to supply our reactors
 	if (craftThoriumShortfall && (crafting.name == 'thorium')) {
-		// FIXME: getResourcePerTick() always returns 0 for thorium due to a bug in the game code; using a manual calculation as a workaround for now
-		//const thoriumConsumption = -gamePage.getResourcePerTick('thorium', true);
-		const reactorBuilding = gamePage.bld.buildingsData[23];
-		const thoriumConsumption = reactorBuilding.isAutomationEnabled ? (reactorBuilding.on * 0.05) : 0;
+		const thoriumConsumption = -gamePage.getResourcePerTick('thorium', true);
 
 		// Calculate how much thorium we need until the next call of autoCraft, plus a buffer
-		const targetThorium = (thoriumConsumption * (dispatchFunctions.autoCraft.triggerInterval + 2)) + 10;
+		const targetThorium = (thoriumConsumption * (dispatchFunctions.autoCraft.triggerInterval + 9)) + 100;
 
 		// Calculate how much more thorium we need to craft to reach that
 		const thoriumShortage = targetThorium - resources.thorium.value;
