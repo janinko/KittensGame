@@ -1586,7 +1586,6 @@ function autoResearch() {
 				});
 			} catch(err) {
 				console.log(err);
-
 			}
 		}
 	}
@@ -1594,12 +1593,25 @@ function autoResearch() {
 	if (origTab != gamePage.ui.activeTabId) {
 		gamePage.ui.activeTabId = origTab;
 		gamePage.ui.render();
-
 	}
 }
 
 
 // Auto Workshop upgrade
+var forbiddenUpgrades = {
+	// Biofuels Processing makes biolabs convert catnip to oil, but causes them to require power to function at all
+	'biofuel': true,
+
+	// Pumpjack increases the yield of oil wells, but causes them to require power to function at all
+	'pumpjack': true,
+
+	// Thorium Reactors allows reactors to consume thorium in order to produce more power; this can be toggled on or off, but defaults to on
+	'thoriumReactors': true,
+
+	// Neural Networks boost engineer effectiveness, but doubles the power requirements of factories
+	// Note: In the current version of the game, Neural Networks doesn't actually double factory power requirements like it's supposed to; until that changes, this one will be left in the 'forbiddenUpgrades' map but assigned a value of 'false' so that it won't actually be blocked from being purchased
+	'neuralNetworks': false,
+};
 function autoWorkshop() {
 	// Check workshop tab is unlocked
 	if (!gamePage.workshopTab.visible) {
@@ -1614,6 +1626,12 @@ function autoWorkshop() {
 	const numButtons = buttons.length;
 	for (let i = 0; i < numButtons; i++) {
 		const button = buttons[i];
+
+		// Some upgrades have negative side effects or permanent costs, and thus should never be purchased automatically
+		if (forbiddenUpgrades[button.model.metadata.name]) {
+			continue;
+		}
+
 		if (button.model.metadata.unlocked && button.model.metadata.researched != true) {
 			try {
 				button.controller.buyItem(button.model, {}, function(result) {
@@ -1626,7 +1644,6 @@ function autoWorkshop() {
 				});
 			} catch(err) {
 				console.log(err);
-
 			}
 		}
 	}
@@ -1634,7 +1651,6 @@ function autoWorkshop() {
 	if (origTab != gamePage.ui.activeTabId) {
 		gamePage.ui.activeTabId = origTab;
 		gamePage.ui.render();
-
 	}
 }
 
