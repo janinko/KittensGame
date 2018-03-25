@@ -711,7 +711,7 @@ function autoSpace() {
 	const origTab = gamePage.ui.activeTabId;
 	if (gamePage.ui.activeTabId != 'Space') {
 		gamePage.ui.activeTabId = 'Space';
-		gamePage.render();
+		gamePage.ui.render();
 	}
 
 	// Build space buildings
@@ -766,7 +766,7 @@ function autoSpace() {
 
 	if (origTab != gamePage.ui.activeTabId) {
 		gamePage.ui.activeTabId = origTab;
-		gamePage.render();
+		gamePage.ui.render();
 	}
 }
 
@@ -1568,7 +1568,7 @@ function autoResearch() {
 
 	const origTab = gamePage.ui.activeTabId;
 	gamePage.ui.activeTabId = 'Science';
-	gamePage.render();
+	gamePage.ui.render();
 
 	const buttons = gamePage.tabs[2].buttons;
 	const numButtons = buttons.length;
@@ -1593,7 +1593,7 @@ function autoResearch() {
 
 	if (origTab != gamePage.ui.activeTabId) {
 		gamePage.ui.activeTabId = origTab;
-		gamePage.render();
+		gamePage.ui.render();
 
 	}
 }
@@ -1608,7 +1608,7 @@ function autoWorkshop() {
 
 	const origTab = gamePage.ui.activeTabId;
 	gamePage.ui.activeTabId = 'Workshop';
-	gamePage.render();
+	gamePage.ui.render();
 
 	const buttons = gamePage.tabs[3].buttons;
 	const numButtons = buttons.length;
@@ -1633,7 +1633,7 @@ function autoWorkshop() {
 
 	if (origTab != gamePage.ui.activeTabId) {
 		gamePage.ui.activeTabId = origTab;
-		gamePage.render();
+		gamePage.ui.render();
 
 	}
 }
