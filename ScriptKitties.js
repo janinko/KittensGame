@@ -1508,4 +1508,397 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 
 	// Special case: Coal
 	if (resourceName == 'coal') {
-		// Coal has no useful purposes whatsoever except for being crafted into steel. Therefore, we should always be willing to diver 100% of our income towards craft
+		// Coal has no useful purposes whatsoever except for being crafted into steel. Therefore, we should always be willing to diver 100% of our income towards crafting rather than trying to build up a stockpile...
+		incomeDivertPortion = 1;
+
+		// ... and we should always be willing to craft as much as possible, no matter how much has already been crafted
+		targetCraftPortion = 1;
+	}
+
+
+	// Our goal is to use a fixed percentage of our production of each source resource for crafting; calculate, from the amount of this resource we have stockpiled and the amount that has already been crafted, how much we need to craft now to make that so
+
+	// Calculate the total amount of this resource in the system
+	const totalResourceAmount = curResource.value + alreadyCraftedEquivelent;
+
+	// Multiply that total by the desired crafting portion to find the amount that should be crafted
+	const targetCraftedResource = totalResourceAmount * targetCraftPortion;
+
+	// Finally, subtract the amount already crafted to find the amount that needs to be crafted (minimum 0)
+	let availableForCrafting = Math.max(targetCraftedResource - alreadyCraftedEquivelent, 0);
+
+
+	// For resources which have a stockpile limit, there are additional complications
+	if (curResource.maxValue) {
+		// If this resource's stockpile is substantially over its limit, we don't want to craft anything, because an overfull stockpile can be used to purchase buildings or upgrades that cost more than the normal stockpile limit
+		// Coal is exempted from this, since it has no uses whatsoever /except/ for crafting
+		if ((resourceName != 'coal') && (curResource.value > (curResource.maxValue * 1.1))) {
+			return 0;
+		}
+
+		const resourceIncome = Math.max(gamePage.getResourcePerTick(resourceName, true) * dispatchFunctions.autoCraft.triggerInterval, 0);
+
+		// We want to divert a certain percentage of our per-tick income of this resource to crafting, even if we are nowhere near the stockpile limit
+
+		// First, take the specified diversion portion from our per-tick income
+		const divertedIncome = resourceIncome * incomeDivertPortion;
+
+		// We may have already spent some of the divertable income for this resource crafting other things this turn; if so subtract that to find the amount still available (minimum 0)
+		const divertedIncomeRemaining = Math.max(divertedIncome - incomeAlredySpent, 0);
+
+		// We may wish to only use a part of the diverted income on this craft, so as to save some for other crafts later
+		const cappedDivertedIncome = divertedIncomeRemaining * incomeCapPortion;
+
+		// We use either the calculated income diversion or the previously calculated target-total-crafted-amount; that way, if we already have a large amount of the crafted resource, our full income goes to rebuilding our stockpile
+		availableForCrafting = Math.min(availableForCrafting, cappedDivertedIncome);
+
+
+		// If this resource is near its stockpile limit, we want to use up enough of the resource in crafting to prevent overflow
+
+		// First, calculate the potential overflow
+		const resourceOverflow = (curResource.value + resourceIncome) - curResource.maxValue;
+
+		// We may wish to only use a part of the overflow on this craft, so as to save some for other crafts later
+		const cappedOverflow = resourceOverflow * incomeCapPortion;
+
+		// If the overflow exceeds the previously calculated target-total-crafted-amount, we use the overflow, since it would be wasted otherwise
+		availableForCrafting = Math.max(availableForCrafting, cappedOverflow);
+	}
+
+
+	// Sanity check: we cannot craft more than we have, nor less than 0
+	availableForCrafting = Math.max(Math.min(availableForCrafting, curResource.value), 0);
+
+
+	// Return the calculated amount
+	return availableForCrafting;
+}
+
+
+// Auto Research
+function autoResearch() {
+	// Check science tab is unlocked
+	if (!gamePage.libraryTab.visible) {
+		return;
+	}
+
+	const origTab = gamePage.ui.activeTabId;
+	gamePage.ui.activeTabId = 'Science';
+	gamePage.render();
+
+	const buttons = gamePage.tabs[2].buttons;
+	const numButtons = buttons.length;
+	for (let i = 0; i < numButtons; i++) {
+		const button = buttons[i];
+		if (button.model.metadata.unlocked && button.model.metadata.researched != true) {
+			try {
+				button.controller.buyItem(button.model, {}, function(result) {
+					if (result) {
+						button.update();
+
+						// Set the triggerImmediate flag for this function, indicating it should be called again next tick
+						dispatchFunctions.autoResearch.triggerImmediate = true;
+					}
+				});
+			} catch(err) {
+				console.log(err);
+
+			}
+		}
+	}
+
+	if (origTab != gamePage.ui.activeTabId) {
+		gamePage.ui.activeTabId = origTab;
+		gamePage.render();
+
+	}
+}
+
+
+// Auto Workshop upgrade
+function autoWorkshop() {
+	// Check workshop tab is unlocked
+	if (!gamePage.workshopTab.visible) {
+		return;
+	}
+
+	const origTab = gamePage.ui.activeTabId;
+	gamePage.ui.activeTabId = 'Workshop';
+	gamePage.render();
+
+	const buttons = gamePage.tabs[3].buttons;
+	const numButtons = buttons.length;
+	for (let i = 0; i < numButtons; i++) {
+		const button = buttons[i];
+		if (button.model.metadata.unlocked && button.model.metadata.researched != true) {
+			try {
+				button.controller.buyItem(button.model, {}, function(result) {
+					if (result) {
+						button.update();
+
+						// Set the triggerImmediate flag for this function, indicating it should be called again next tick
+						dispatchFunctions.autoWorkshop.triggerImmediate = true;
+					}
+				});
+			} catch(err) {
+				console.log(err);
+
+			}
+		}
+	}
+
+	if (origTab != gamePage.ui.activeTabId) {
+		gamePage.ui.activeTabId = origTab;
+		gamePage.render();
+
+	}
+}
+
+
+// Festival automatically
+var dramaTech = gamePage.science.get('drama');
+var carnivalsPerk = gamePage.prestige.getPerk('carnivals');
+function autoParty() {
+	if (
+		dramaTech.researched
+		&& (resources.manpower.value > 1500)
+		&& (resources.culture.value > 5000)
+		&& (resources.parchment.value > 2500)
+		&& (gamePage.calendar.festivalDays < 4000)
+		&& (carnivalsPerk.researched || (gamePage.calendar.festivalDays = 0))
+	) {
+		gamePage.village.holdFestival(1);
+	}
+}
+
+
+// Auto assign new kittens to selected job
+function autoAssign() {
+	const chosenJob = gamePage.village.getJob(autoChoice);
+	if (chosenJob.unlocked && (gamePage.village.getFreeKittens() > 0)) {
+		gamePage.village.assignJob(chosenJob);
+
+		// Set the triggerImmediate flag for this function, indicating it should be called again next tick
+		dispatchFunctions.autoAssign.triggerImmediate = true;
+	}
+}
+
+
+// Control Energy Consumption
+var smelterBuilding = gamePage.bld.buildingsData[15];
+var bioLabBuilding = gamePage.bld.buildingsData[9];
+var oilWellBuilding = gamePage.bld.buildingsData[20];
+var factoryBuilding = gamePage.bld.buildingsData[22];
+var calcinerBuilding = gamePage.bld.buildingsData[16];
+var acceleratorBuilding = gamePage.bld.buildingsData[24];
+function energyControl() {
+	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
+
+	if (netEnergy <= 0) {
+		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
+		dispatchFunctions.energyControl.triggerImmediate = true;
+
+		if (bioLabBuilding.on > 0) {
+			bioLabBuilding.on--;
+		} else if (oilWellBuilding.on > 0) {
+			oilWellBuilding.on--;
+		} else if (factoryBuilding.on > 0) {
+			factoryBuilding.on--;
+		} else if (calcinerBuilding.on > 0) {
+			calcinerBuilding.on--;
+		} else if (acceleratorBuilding.on > 0) {
+			acceleratorBuilding.on--;
+		} else {
+			// Clear the triggerImmediate flag, since no changes were actually made
+			dispatchFunctions.energyControl.triggerImmediate = false;
+		}
+	} else if (netEnergy > 3) {
+		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
+		dispatchFunctions.energyControl.triggerImmediate = true;
+
+		if (acceleratorBuilding.val > acceleratorBuilding.on) {
+			acceleratorBuilding.on++;
+		} else if (calcinerBuilding.val > calcinerBuilding.on) {
+			calcinerBuilding.on++;
+		} else if (factoryBuilding.val > factoryBuilding.on) {
+			factoryBuilding.on++;
+		} else if (oilWellBuilding.val > oilWellBuilding.on) {
+			oilWellBuilding.on++;
+		} else if (bioLabBuilding.val > bioLabBuilding.on) {
+			bioLabBuilding.on++;
+		} else {
+			// Clear the triggerImmediate flag, since no changes were actually made
+			dispatchFunctions.energyControl.triggerImmediate = false;
+		}
+	}
+}
+
+
+// Gather catnip
+var catnipFieldBuilding = gamePage.bld.buildingsData[0];
+function autoNip() {
+	if (catnipFieldBuilding.val < 30) {
+		$('.btnContent:contains("Gather")').trigger('click');
+
+		// Set the triggerImmediate flag for this function, so that it is called again next tick
+		dispatchFunctions.autoNip.triggerImmediate = true;
+	}
+}
+
+
+var dispatchFunctions = {
+	autoCraft: {
+		functionRef: autoCraft,
+		triggerInterval: 1,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoCraft
+	},
+	autoObserve: {
+		functionRef: autoObserve,
+		triggerInterval: 5,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.alwaysOn
+	},
+	autoBuild: {
+		functionRef: autoBuild,
+		triggerInterval: 10,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoBuild
+	},
+	autoSpace: {
+		functionRef: autoSpace,
+		triggerInterval: 10,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoBuild
+	},
+	autoAssign: {
+		functionRef: autoAssign,
+		triggerInterval: 10,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoAssign
+	},
+	energyControl: {
+		functionRef: energyControl,
+		triggerInterval: 10,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoEnergy
+	},
+	autoResearch: {
+		functionRef: autoResearch,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoScience
+	},
+	autoWorkshop: {
+		functionRef: autoWorkshop,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoUpgrade
+	},
+	autoNip: {
+		functionRef: autoNip,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoBuild
+	},
+	autoParty: {
+		functionRef: autoParty,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoParty
+	},
+	autoTrade: {
+		functionRef: autoTrade,
+		triggerInterval: 10,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoTrade
+	},
+	autoPraise: {
+		functionRef: autoPraise,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoPraise
+	},
+	autoHunt: {
+		functionRef: autoHunt,
+		triggerInterval: 20,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoHunt
+	},
+	emergencyTradeFood: {
+		functionRef: emergencyTradeFood,
+		triggerInterval: 1,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.alwaysOn
+	},
+};
+
+var dispatchOrder = [
+	'autoAssign',
+	'emergencyTradeFood',
+	'autoTrade',
+	'autoHunt',
+	'autoObserve',
+	'autoResearch',
+	'autoWorkshop',
+	'autoBuild',
+	'autoSpace',
+	'autoCraft',
+	'energyControl',
+	'autoNip',
+	'autoParty',
+	'autoPraise'
+];
+var numDispatches = dispatchOrder.length;
+
+// This function keeps track of the game's ticks and uses math to execute these functions at set times relative to the game.
+clearInterval(runAllAutomation);
+var lastTick = Number.NEGATIVE_INFINITY;
+var runAllAutomation = setInterval(function() {
+	// Check how many ticks have passed since the last time we executed
+	const curTick = gamePage.timer.ticksTotal;
+	const ticksElapsed = curTick - lastTick;
+
+	// Update the last execution tick
+	lastTick = curTick;
+
+	// If this is still the same tick as when we last executed, abort
+	if (ticksElapsed < 1) {
+		return;
+	}
+
+	// Dispatch each function in order
+	for (let i = 0; i < numDispatches; i++) {
+		curFunction = dispatchFunctions[dispatchOrder[i]];
+
+		// A function is triggered when the corresponding button is active and any of 3 conditions are true:
+		//   * The current tick is a multiple of the function's dispatch interval
+		//   * The function set its triggerImmediate flag to true during its last run, indicating it wanted to be called again immediately
+		//   * The function set a triggerTick value, indicating a specific tick it wanted to be called again on, and that tick has arrived
+		// However, for the 1st and 3rd conditions, we must also account for the possibility that the dispatcher might not run every tick, in which case the function should be triggered as soon as possible after its intended trigger tick
+		if (curFunction.autoButton.active && (curFunction.triggerImmediate || (curFunction.triggerTick <= curTick) || ((curTick % curFunction.triggerInterval) < ticksElapsed))) {
+			// Clear the triggerImmediate flag and the triggerTick value; if the function wants to use them again it must reset them during its execution
+			curFunction.triggerImmediate = false;
+			curFunction.triggerTick = Infinity;
+
+			// Execute the function
+			curFunction.functionRef();
+		}
+	}
+}, 50);
+
+
