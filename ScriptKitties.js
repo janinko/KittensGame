@@ -679,7 +679,7 @@ function autoBuild() {
 	}
 
 	const buttons = gamePage.tabs[0].buttons;
-	for (let z = 0; z < 32; z++) {
+	for (let z = 0; z < 33; z++) {
 		const buildingName = buildingsList[z];
 		if (buildings[z][1] && gamePage.bld.getBuildingExt(buildingName).meta.unlocked) {
 			for (let i = 2; i < gamePage.tabs[0].buttons.length; i++) {
@@ -719,7 +719,7 @@ function autoSpace() {
 
 	// Build space buildings
 	const planetPanels = gamePage.tabs[6].planetPanels;
-	for (let z = 32; z < numBuildings; z++) {
+	for (let z = 33; z < numBuildings; z++) {
 		if (buildings[z][1]) {
 			try {
 				const buildingName = buildingsList[z];
