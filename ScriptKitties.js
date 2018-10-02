@@ -1145,7 +1145,8 @@ function tradeGriffins() {
 		const ironOverflow = Math.max(Math.min((resources.iron.value + expectedIron) - targetIron, resources.iron.value), 0);
 
 		// Craft the necessary quantity of steel, with each crafting consuming 100 units of iron
-		gamePage.craft('steel', ironOverflow / 100);
+		gamePage.craft('plate', ironOverflow/2 / 150);
+		gamePage.craft('steel', ironOverflow/2 / 100);
 	} else {
 		// We are in normal mode, which means we want to trade for just enough iron to fill our stockpile
 
