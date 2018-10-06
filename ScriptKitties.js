@@ -1701,7 +1701,7 @@ function energyControl() {
 
 		if (bioLabBuilding.on > 0) {
 			bioLabBuilding.on--;
-		} else if (oilWellBuilding.on > 0) {
+		} else if (oilWellBuilding.effects.energyConsumption > 0 && oilWellBuilding.on > 0) {
 			oilWellBuilding.on--;
 		} else if (factoryBuilding.on > 0) {
 			factoryBuilding.on--;
