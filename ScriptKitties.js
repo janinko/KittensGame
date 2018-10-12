@@ -1594,7 +1594,7 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 }
 
 
-function autoShutter() {
+function autoShatter() {
 	const combustButton = gamePage.tabs[7].children[2].children[0].children[0];
 	if (combustButton.model === undefined || combustButton.model.name != "Combust TC"){
 		autoSwitch(autoButtons.autoShatter)
