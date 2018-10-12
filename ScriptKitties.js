@@ -434,7 +434,8 @@ var buildingsList = [
 	'<a href="#" onclick="clearOptionHelpDiv();" style="position: absolute; top: 10px; right: 15px;">close</a>' +
 
 	'<button id="killSwitch" onclick="clearInterval(clearScript()); gamePage.msg(\'Script is dead\');">Kill Switch</button> <br />' +
-	'<button id="efficiencyButton" onclick="kittenEfficiency()">Check Efficiency</button><br /><br />' +
+	'<button id="efficiencyButton" onclick="kittenEfficiency()">Check Efficiency</button><br />' +
+	'<button id="shatterButton" onclick="combustTC()">Shatter TC</button><br /><br />' +
 
 	'<button id="autoBuild" style="color:red" onclick="autoSwitch(autoButtons.autoBuild);"> Auto Build </button><br />' +
 	'<button id="bldSelect" onclick="selectBuildings()">Select Building</button><br />' +
@@ -847,7 +848,7 @@ function tradeZebras() {
 
 	// Our target final titanium level is the maximum capacity of our stockpile, minus a buffer large enough to ensure it doesn't overflow before the next autoCraft() (assuming our titanium income is positive)
 	const targetTitanium = resources.titanium.maxValue - Math.max(gamePage.getResourcePerTick('titanium', true) * dispatchFunctions.autoCraft.triggerInterval, 0);
-
+	
 
 	// Determine how many trades to perform
 	// We want to trade for just enough titanium to fill our stockpile
@@ -864,14 +865,25 @@ function tradeZebras() {
 		tradesRequired = Math.max(tradesRequired, 1);
 	}
 
-	// If no trades are necessary, we're done
-	if (tradesRequired < 1) {
-		return;
-	}
 
 	// If possible, we want to perform as many trades as necessary to fill the stockpile; if we don't have enough resources to do that, we just do as many as we can
-	const tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+	let tradesToPerform;
+	if(tradesRequired < maxTradesPossible){
+		const maxTradesRequired = Math.max(Math.floor(targetTitanium / expectedTitaniumPerTrade),1);
+		const bonusTrades = (maxTradesPossible - tradesRequired)/10;
+		tradesToPerform = Math.min(tradesRequired + bonusTrades, maxTradesRequired);
 
+		const expectedBonusTitanium = bonusTrades * expectedTitaniumPerTrade;
+		const craftAlloy = Math.min(expectedBonusTitanium, resources.titanium.value);
+		gamePage.craft('alloy', craftAlloy / 10);
+	}else{
+		tradesToPerform = Math.min(tradesRequired, maxTradesPossible);
+	}
+
+	// If no trades are necessary, we're done
+	if (tradesToPerform < 1) {
+		return;
+	}
 
 	// Besides the titanium, trading with the Zebras will also return some iron; we need ensure there is enough room in the stockpile for it, if possible
 	if (crafts.plate.unlocked) {
@@ -1575,6 +1587,54 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 	return availableForCrafting;
 }
 
+
+function combustTC() {
+	const heatTC = (game.getEffect("heatMax") - game.time.heat) / 10;
+	
+	const shatterTCGain = game.getEffect("shatterTCGain") * (1+ game.getEffect("rrRatio"));
+	const resourcesGain = ( 1 / game.calendar.dayPerTick * game.calendar.daysPerSeason * 4) * shatterTCGain;
+
+	const unobtainiumTC = resources.unobtainium.maxValue / (game.getResourcePerTick("unobtainium", true)*resourcesGain);
+	const uraniumTC = resources.uranium.maxValue / (game.getResourcePerTick("uranium", true)*resourcesGain);
+	const antimatter = gamePage.resPool.get("antimatter");
+	const antimatterSpace = (antimatter.maxValue - antimatter.value);
+	const antimatterTC = antimatterSpace / game.getEffect("antimatterProduction");
+	console.log("heatTC: " + heatTC);
+	console.log("unobtainiumTC: " + unobtainiumTC);
+	console.log("uraniumTC: " + uraniumTC);
+	console.log("antimatterTC: " + antimatterTC);
+	const maxShatters = Math.floor(Math.min(heatTC,unobtainiumTC,uraniumTC, antimatterTC));
+	console.log("maxShatters: " + maxShatters);
+
+	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
+	console.log("netEnergy: " + netEnergy);
+	if(netEnergy <= 0){
+		gamePage.msg("Energy too low, not shattering");
+		return;
+	}
+
+	const unobtainiumGain = maxShatters * (game.getResourcePerTick("unobtainium", true)*resourcesGain);
+	const uraniumGain = maxShatters * (game.getResourcePerTick("uranium", true)*resourcesGain);
+	const unobtainiumSpace = resources.unobtainium.maxValue - resources.unobtainium.value;
+	const uraniumSpace = resources.uranium.maxValue - resources.uranium.value;
+	if(unobtainiumSpace < unobtainiumGain){
+		const toCraft = unobtainiumGain - unobtainiumSpace;
+		console.log("toCraft unobtainium: " + toCraft + " = " + (toCraft / 1000) + " eludium");
+		gamePage.craft('eludium', toCraft / 1000);
+	}
+	if(uraniumSpace < uraniumGain){
+		const toCraft = uraniumGain - uraniumSpace;
+		console.log("toCraft uranium: " + toCraft + " = " + (toCraft / 250) + " thorium");
+		gamePage.craft('thorium', toCraft / 250);
+	}
+	const combustButton = gamePage.tabs[7].children[2].children[0].children[0];
+	if (combustButton.model.name != "Combust TC"){
+		return;
+	}
+	for (let i = 0; i < maxShatters; i++) {
+		combustButton.controller.buyItem(combustButton.model, null, function(result) { });
+	}
+}
 
 // Auto Research
 function autoResearch() {
