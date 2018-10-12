@@ -181,6 +181,8 @@ var craftIncome = 50;
 // Controls whether autoCraft() will craft extra thorium to prevent a shortfall
 var craftThoriumShortfall = false;
 
+var shatterLimit = 500;
+
 
 // Defines the various crafts possible
 var mainCraftings = [
@@ -479,8 +481,8 @@ var buildingsList = [
 	'<button id="autoScience" style="color:red" onclick="autoSwitch(autoButtons.autoScience)"> Auto Science </button><br />' +
 	'<button id="autoUpgrade" style="color:red" onclick="autoSwitch(autoButtons.autoUpgrade)"> Auto Upgrade </button><br />' +
 	'<button id="autoEnergy" style="color:red" onclick="autoSwitch(autoButtons.autoEnergy)"> Energy Control </button><br />' +
-	'<button id="autoParty" style="color:red" onclick="autoSwitch(autoButtons.autoParty)"> Auto Party </button>' +
-	'<button id="autoShatter" style="color:red" onclick="autoSwitch(autoButtons.autoShatter)"> Auto Shatter TC </button>' +
+	'<button id="autoParty" style="color:red" onclick="autoSwitch(autoButtons.autoParty)"> Auto Party </button><br />' +
+	'<button id="autoShatter" style="color:red" onclick="autoSwitch(autoButtons.autoShatter)"> Auto Shatter TC </button><input id="shatterLimitText" type="text" style="width:35px" onchange="shatterLimit = this.value" value="' + shatterLimit + '">' +
 	'</div>' +
 	'</div>';
 
@@ -1596,9 +1598,14 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 
 function autoShatter() {
 	const combustButton = gamePage.tabs[7].children[2].children[0].children[0];
-	if (combustButton.model === undefined || combustButton.model.name != "Combust TC"){
+	if (combustButton.model === null || combustButton.model.name != "Combust TC"){
 		autoSwitch(autoButtons.autoShatter)
 		return;
+	}
+
+	if (shatterLimit < 1) shatterLimit = 1;
+	if(gamePage.resPool.get("timeCrystal").value < shatterLimit){
+		console.log("TC at limit");
 	}
 
 	const heatTC = (game.getEffect("heatMax") - game.time.heat) / 10;
@@ -1617,7 +1624,7 @@ function autoShatter() {
 
 	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
 	if(netEnergy <= 0){
-		gamePage.msg("Low energy: " + netEnergy);
+		console.log("Low energy: " + netEnergy);
 		return;
 	}
 
