@@ -50,6 +50,11 @@ var autoButtons = {
 		swapName: 'energy',
 		buttonId: 'autoEnergy'
 	},
+	autoShatter: {
+		active: false,
+		swapName: 'shatter',
+		buttonId: 'autoShatter'
+	},
 	alwaysOn: {
 		active: true
 	},
@@ -475,6 +480,7 @@ var buildingsList = [
 	'<button id="autoUpgrade" style="color:red" onclick="autoSwitch(autoButtons.autoUpgrade)"> Auto Upgrade </button><br />' +
 	'<button id="autoEnergy" style="color:red" onclick="autoSwitch(autoButtons.autoEnergy)"> Energy Control </button><br />' +
 	'<button id="autoParty" style="color:red" onclick="autoSwitch(autoButtons.autoParty)"> Auto Party </button>' +
+	'<button id="autoShatter" style="color:red" onclick="autoSwitch(autoButtons.autoShatter)"> Auto Shatter TC </button>' +
 	'</div>' +
 	'</div>';
 
@@ -1588,6 +1594,54 @@ function resourceAvailableForCrafting(resourceName, targetCraftPortion, alreadyC
 }
 
 
+function autoShutter() {
+	const combustButton = gamePage.tabs[7].children[2].children[0].children[0];
+	if (combustButton.model === undefined || combustButton.model.name != "Combust TC"){
+		autoSwitch(autoButtons.autoShatter)
+		return;
+	}
+
+	const heatTC = (game.getEffect("heatMax") - game.time.heat) / 10;
+	if (heatTC < 1){
+		console.log("Heat too big: " + heatTC);
+		return;
+	}
+
+	const antimatter = gamePage.resPool.get("antimatter");
+	const antimatterSpace = (antimatter.maxValue - antimatter.value);
+	const antimatterTC = antimatterSpace / game.getEffect("antimatterProduction");
+	if (antimatterTC < 1){
+		console.log("Antimatter cap: " + antimatterTC);
+		return;
+	}
+
+	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
+	if(netEnergy <= 0){
+		gamePage.msg("Low energy: " + netEnergy);
+		return;
+	}
+
+	const shatterTCGain = game.getEffect("shatterTCGain") * (1+ game.getEffect("rrRatio"));
+	const resourcesGain = ( 1 / game.calendar.dayPerTick * game.calendar.daysPerSeason * 4) * shatterTCGain;
+
+	const unobtainiumGain = game.getResourcePerTick("unobtainium", true) * resourcesGain;
+	const unobtainiumOverflow = resources.unobtainium.value + unobtainiumGain - resources.unobtainium.maxValue;
+	if(unobtainiumOverflow > 0){
+		console.log("toCraft unobtainium: " + unobtainiumOverflow + " = " + (unobtainiumOverflow / 1000) + " eludium");
+		gamePage.craft('eludium', unobtainiumOverflow / 1000);
+	}
+
+	const uraniumGain = game.getResourcePerTick("uranium", true) * resourcesGain;
+	const uraniumOverflow = resources.uranium.value + uraniumGain - resources.uranium.maxValue;
+	if(uraniumOverflow > 0){
+		console.log("toCraft uranium: " + uraniumOverflow + " = " + (uraniumOverflow / 250) + " thorium");
+		gamePage.craft('thorium', uraniumOverflow / 250);
+	}
+
+	combustButton.controller.buyItem(combustButton.model, null, function(result) { });
+}
+
+
 function combustTC() {
 	const heatTC = (game.getEffect("heatMax") - game.time.heat) / 10;
 	
@@ -1628,7 +1682,7 @@ function combustTC() {
 		gamePage.craft('thorium', toCraft / 250);
 	}
 	const combustButton = gamePage.tabs[7].children[2].children[0].children[0];
-	if (combustButton.model.name != "Combust TC"){
+	if (combustButton.model === undefined || combustButton.model.name != "Combust TC"){
 		return;
 	}
 	for (let i = 0; i < maxShatters; i++) {
@@ -1906,6 +1960,13 @@ var dispatchFunctions = {
 		triggerTick: Infinity,
 		autoButton: autoButtons.alwaysOn
 	},
+	autoShatter: {
+		functionRef: autoShatter,
+		triggerInterval: 30,
+		triggerImmediate: true,
+		triggerTick: Infinity,
+		autoButton: autoButtons.autoShatter
+	},
 };
 
 var dispatchOrder = [
@@ -1922,7 +1983,8 @@ var dispatchOrder = [
 	'energyControl',
 	'autoNip',
 	'autoParty',
-	'autoPraise'
+	'autoPraise',
+	'autoShatter'
 ];
 var numDispatches = dispatchOrder.length;
 
