@@ -1621,16 +1621,26 @@ function autoShatter() {
 		return;
 	}
 
-	if (shatterLimit < 1) shatterLimit = 1;
-	if(gamePage.resPool.get("timeCrystal").value < shatterLimit){
-		console.log("TC at limit");
+	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
+	if(netEnergy <= 0){
+		console.log("Low energy: " + netEnergy);
+		return;
 	}
+
+	if (shatterLimit < 1) shatterLimit = 1;
+	const limitTC = gamePage.resPool.get("timeCrystal").value - shatterLimit;
+	if(limitTC < 1){
+		console.log("TC at limit: " + limitTC);
+		return;
+	}
+		console.log("#TC at limit: " + limitTC);
 
 	const heatTC = (game.getEffect("heatMax") - game.time.heat) / 10;
 	if (heatTC < 1){
 		console.log("Heat too big: " + heatTC);
 		return;
 	}
+		console.log("#Heat too big: " + heatTC);
 
 	const antimatter = gamePage.resPool.get("antimatter");
 	const antimatterSpace = (antimatter.maxValue - antimatter.value);
@@ -1639,31 +1649,38 @@ function autoShatter() {
 		console.log("Antimatter cap: " + antimatterTC);
 		return;
 	}
-
-	const netEnergy = gamePage.resPool.energyProd - gamePage.resPool.energyCons;
-	if(netEnergy <= 0){
-		console.log("Low energy: " + netEnergy);
-		return;
-	}
+		console.log("#Antimatter cap: " + antimatterTC);
 
 	const shatterTCGain = game.getEffect("shatterTCGain") * (1+ game.getEffect("rrRatio"));
 	const resourcesGain = ( 1 / game.calendar.dayPerTick * game.calendar.daysPerSeason * 4) * shatterTCGain;
 
 	const unobtainiumGain = game.getResourcePerTick("unobtainium", true) * resourcesGain;
-	const unobtainiumOverflow = resources.unobtainium.value + unobtainiumGain - resources.unobtainium.maxValue;
-	if(unobtainiumOverflow > 0){
-		console.log("toCraft unobtainium: " + unobtainiumOverflow + " = " + (unobtainiumOverflow / 1000) + " eludium");
-		gamePage.craft('eludium', unobtainiumOverflow / 1000);
-	}
+	const unobtainiumTC = resources.unobtainium.maxValue / unobtainiumGain;
+		console.log("#unobtainiumTC: " + unobtainiumTC);
 
 	const uraniumGain = game.getResourcePerTick("uranium", true) * resourcesGain;
-	const uraniumOverflow = resources.uranium.value + uraniumGain - resources.uranium.maxValue;
-	if(uraniumOverflow > 0){
-		console.log("toCraft uranium: " + uraniumOverflow + " = " + (uraniumOverflow / 250) + " thorium");
-		gamePage.craft('thorium', uraniumOverflow / 250);
+	const uraniumTC = resources.uranium.maxValue / uraniumGain;
+		console.log("#uraniumTC: " + uraniumTC);
+
+	const shattersToPerform = Math.floor(Math.min(limitTC, heatTC, antimatterTC, unobtainiumTC, uraniumTC));
+	if(shattersToPerform < 1){
+		shattersToPerform = 1;
+	}
+		console.log("#shattersToPerform: " + shattersToPerform);
+
+	const unobtainiumOverflow = resources.unobtainium.value + unobtainiumGain * shattersToPerform - resources.unobtainium.maxValue;
+	if(unobtainiumOverflow > 0){
+		console.log("toCraft unobtainium: " + unobtainiumOverflow + " = " + (unobtainiumOverflow / 1000) + " eludium");
+		gamePage.craft('eludium', Math.min(resources.unobtainium.value, unobtainiumOverflow) / 1000);
 	}
 
-	combustButton.controller.buyItem(combustButton.model, null, function(result) { });
+	const uraniumOverflow = resources.uranium.value + uraniumGain * shattersToPerform - resources.uranium.maxValue;
+	if(uraniumOverflow > 0){
+		console.log("toCraft uranium: " + uraniumOverflow + " = " + (uraniumOverflow / 250) + " thorium");
+		gamePage.craft('thorium', Math.min(resources.uranium.value, uraniumOverflow) / 250);
+	}
+
+	combustButton.controller.doShatterAmt(combustButton.model, null, function(result) { }, shattersToPerform);
 }
 
 
@@ -1710,9 +1727,7 @@ function combustTC() {
 	if (combustButton.model === undefined || combustButton.model.name != "Combust TC"){
 		return;
 	}
-	for (let i = 0; i < maxShatters; i++) {
-		combustButton.controller.buyItem(combustButton.model, null, function(result) { });
-	}
+	combustButton.controller.doShatterAmt(combustButton.model, null, function(result) { }, maxShatters);
 }
 
 // Auto Research
@@ -1842,12 +1857,12 @@ function energyControl() {
 			bioLabBuilding.on--;
 		} else if (oilWellBuilding.effects.energyConsumption > 0 && oilWellBuilding.on > 0) {
 			oilWellBuilding.on--;
-		} else if (factoryBuilding.on > 0) {
-			factoryBuilding.on--;
 		} else if (calcinerBuilding.on > 0) {
 			calcinerBuilding.on--;
 		} else if (acceleratorBuilding.on > 0) {
 			acceleratorBuilding.on--;
+		} else if (factoryBuilding.on > 0) {
+			factoryBuilding.on--;
 		} else {
 			// Clear the triggerImmediate flag, since no changes were actually made
 			dispatchFunctions.energyControl.triggerImmediate = false;
@@ -1856,12 +1871,12 @@ function energyControl() {
 		// Preemptively set the triggerImmediate flag for this function, indicating it should be called again next tick
 		dispatchFunctions.energyControl.triggerImmediate = true;
 
-		if (acceleratorBuilding.val > acceleratorBuilding.on) {
+		if (factoryBuilding.val > factoryBuilding.on) {
+			factoryBuilding.on++;
+		} else if (acceleratorBuilding.val > acceleratorBuilding.on) {
 			acceleratorBuilding.on++;
 		} else if (calcinerBuilding.val > calcinerBuilding.on) {
 			calcinerBuilding.on++;
-		} else if (factoryBuilding.val > factoryBuilding.on) {
-			factoryBuilding.on++;
 		} else if (oilWellBuilding.val > oilWellBuilding.on) {
 			oilWellBuilding.on++;
 		} else if (bioLabBuilding.val > bioLabBuilding.on) {
